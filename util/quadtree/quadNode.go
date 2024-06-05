@@ -37,39 +37,56 @@ func (quadNode *QuadNode) split(quadRect Rect) {
 
 }
 
+// computes the rect of a quadrant given its parent quad along with the specific quadrant idx
+// 0 = NW
+// 1 = NE
+// 2 = SW
+// 3 = SE
+// otherwise nil
+func ComputeQuadRect(parentRect Rect, quadrantIdx int) *Rect {
+	width := parentRect.W / 2
+	height := parentRect.H / 2
+
+	switch quadrantIdx {
+	case 0:
+		return &Rect{X: parentRect.X, Y: parentRect.Y, W: width, H: height}
+	case 1:
+		return &Rect{X: width, Y: parentRect.Y, W: width, H: height}
+	case 2:
+		return &Rect{X: parentRect.X, Y: height, W: width, H: height}
+	case 3:
+		return &Rect{X: width, Y: height, W: width, H: height}
+	default:
+		return nil
+
+	}
+}
+
 // Returns the index of the quadrant in quadRect that contains all of el as well as the quadrants corresponding rect.
 // Returns -1 and a nil pointer when no quadrant in quadRect contains all of el.
-func QuadrantContaining(nodeBox Rect, el QuadElement) (quadrantIdx int32, quadBox *Rect) {
-	if !nodeBox.Contains(&el.Rect) {
+func QuadrantContaining(nodeRect Rect, el QuadElement) (quadrantIdx int32, quadRect *Rect) {
+	if !nodeRect.Contains(el.Rect) {
 		panic("element is not contained in the given nodeBox")
 	}
 
-	width := nodeBox.W / 2
-	height := nodeBox.H / 2
-
-	// north west
-	rect := Rect{X: nodeBox.X, Y: nodeBox.Y, W: width, H: height}
-	if rect.Contains(&el.Rect) {
-		return 0, &rect
+	rect := ComputeQuadRect(nodeRect, 0)
+	if rect.Contains(el.Rect) {
+		return 0, rect
 	}
 
-	// north east
-	rect.X = width
-	if rect.Contains(&el.Rect) {
-		return 1, &rect
+	rect = ComputeQuadRect(nodeRect, 1)
+	if rect.Contains(el.Rect) {
+		return 1, rect
 	}
 
-	// south west
-	rect.X = nodeBox.X
-	rect.Y = height
-	if rect.Contains(&el.Rect) {
-		return 2, &rect
+	rect = ComputeQuadRect(nodeRect, 2)
+	if rect.Contains(el.Rect) {
+		return 2, rect
 	}
 
-	// south east
-	rect.X = width
-	if rect.Contains(&el.Rect) {
-		return 3, &rect
+	rect = ComputeQuadRect(nodeRect, 3)
+	if rect.Contains(el.Rect) {
+		return 3, rect
 	}
 
 	return -1, nil

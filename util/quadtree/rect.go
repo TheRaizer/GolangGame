@@ -14,11 +14,11 @@ func (rect *Rect) Center() util.Vec2[int32] {
 	return util.Vec2[int32]{X: centerX, Y: centerY}
 }
 
-func (rect *Rect) Contains(otherRect *Rect) bool {
+func (rect *Rect) Contains(otherRect Rect) bool {
 	return rect.X <= otherRect.X && rect.Y <= otherRect.Y && rect.Right() >= otherRect.Right() && rect.Bottom() >= otherRect.Bottom()
 }
 
-func (rect *Rect) Intersects(otherRect *Rect) bool {
+func (rect *Rect) Intersects(otherRect Rect) bool {
 	// does not over-lap if:
 	// the other rect's ride side is to the left of the rect
 	// the other rect's top is below the rects bottom
