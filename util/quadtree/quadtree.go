@@ -44,7 +44,7 @@ func (quadtree *CollisionQuadTree) query(node *QuadNode, nodeRect Rect, hitbox R
 	var intersectingEls []QuadElement
 
 	if node == nil {
-		panic("node pointer to query was nill")
+		panic("node was nil")
 	}
 
 	if !nodeRect.Intersects(hitbox) {
@@ -185,3 +185,73 @@ func (quadtree *CollisionQuadTree) insert(node *QuadNode, nodeRect Rect, depth i
 		}
 	}
 }
+
+// // NOTE: untested and inefficient
+// func (quadtree *CollisionQuadTree) FindAllIntersections() [][2]QuadElement {
+// 	return quadtree.findAllIntersections(quadtree.root, quadtree.globalRect)
+// }
+//
+// // return every pairwise interscetion that occurs in the tree
+// func (quadtree *CollisionQuadTree) findAllIntersections(node *QuadNode, nodeRect Rect) [][2]QuadElement {
+// 	var intersections [][2]QuadElement
+//
+// 	if node == nil {
+// 		panic("node pointer was nil")
+// 	}
+//
+// 	// interate through the given node and compare each value to values within itself
+// 	// avoid rechecking intersections
+// 	for i := 0; i < len(node.els); i++ {
+// 		for j := 0; j < i; j++ {
+// 			if node.els[i].Rect.Intersects(node.els[j].Rect) {
+// 				intersections = append(intersections, [2]QuadElement{node.els[i], node.els[j]})
+// 			}
+// 		}
+// 	}
+//
+// 	// if its not a leaf check its descendants for more intersections
+// 	if !node.isLeaf() {
+// 		for _, el := range node.els {
+// 			// for each element check intersections between itself and its descendents
+// 			intersectionsInDescendants := quadtree.findAllIntersectionsInDescendants(node, nodeRect, el)
+// 			intersections = append(intersections, intersectionsInDescendants...)
+// 		}
+//
+// 		for i, child := range node.children {
+// 			// find all the intersections in any values in the children now recursively
+// 			childIntersections := quadtree.findAllIntersections(child, *ComputeQuadRect(nodeRect, i))
+// 			intersections = append(intersections, childIntersections...)
+// 		}
+// 	}
+//
+// 	return intersections
+// }
+//
+// // find all intersections between an element stored in a branch node, and the elements of all of its descendants
+// func (quadtree *CollisionQuadTree) findAllIntersectionsInDescendants(parentNode *QuadNode, parentRect Rect, parentEl QuadElement) [][2]QuadElement {
+// 	var intersections [][2]QuadElement
+//
+// 	if parentNode == nil {
+// 		panic("node was nil")
+// 	}
+//
+// 	if parentNode.isLeaf() {
+// 		panic("node cannot be a leaf")
+// 	}
+//
+// 	for i, child := range parentNode.children {
+// 		// find every intersection with the parent element and any child elements
+// 		for _, el := range child.els {
+// 			if el.Rect.Intersects(parentEl.Rect) {
+// 				intersections = append(intersections, [2]QuadElement{parentEl, el})
+// 			}
+// 		}
+//
+// 		if !child.isLeaf() {
+// 			intersectionsInChild := quadtree.findAllIntersectionsInDescendants(child, *ComputeQuadRect(parentRect, i), parentEl)
+// 			intersections = append(intersections, intersectionsInChild...)
+// 		}
+// 	}
+//
+// 	return intersections
+// }

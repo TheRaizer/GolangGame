@@ -51,11 +51,11 @@ func ComputeQuadRect(parentRect Rect, quadrantIdx int) *Rect {
 	case 0:
 		return &Rect{X: parentRect.X, Y: parentRect.Y, W: width, H: height}
 	case 1:
-		return &Rect{X: width, Y: parentRect.Y, W: width, H: height}
+		return &Rect{X: parentRect.X + width, Y: parentRect.Y, W: width, H: height}
 	case 2:
-		return &Rect{X: parentRect.X, Y: height, W: width, H: height}
+		return &Rect{X: parentRect.X, Y: parentRect.Y + height, W: width, H: height}
 	case 3:
-		return &Rect{X: width, Y: height, W: width, H: height}
+		return &Rect{X: parentRect.X + width, Y: parentRect.Y + height, W: width, H: height}
 	default:
 		return nil
 
