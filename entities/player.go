@@ -2,7 +2,6 @@ package entities
 
 import (
 	"github.com/TheRaizer/GolangGame/core"
-	"github.com/TheRaizer/GolangGame/display"
 )
 
 type Player struct {
@@ -12,10 +11,6 @@ type Player struct {
 
 func NewPlayer(initPos core.Vector) *Player {
 	return &Player{pos: initPos, BaseGameObject: core.BaseGameObject{}}
-}
-
-func (player *Player) canMove(p display.Pixel) bool {
-	return true
 }
 
 func (player *Player) move(dt uint64) {
