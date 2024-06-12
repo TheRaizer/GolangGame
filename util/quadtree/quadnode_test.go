@@ -113,10 +113,10 @@ func TestQuadrantContaining(t *testing.T) {
 			Expected: 2,
 		},
 		{
-			Name: "Should return 2 if the element rect is contained in SE quadrant",
+			Name: "Should return 3 if the element rect is contained in SE quadrant",
 			Input: TestInput{
 				nodeRect: Rect{9, 2, 8, 8},
-				el:       QuadElement{Rect: Rect{7, 6, 2, 2}, Id: "id"},
+				el:       QuadElement{Rect: Rect{13, 6, 2, 2}, Id: "id"},
 			},
 			Expected: 3,
 		},
@@ -127,9 +127,7 @@ func TestQuadrantContaining(t *testing.T) {
 			defer func() {
 				r := recover()
 				require.NotNil(t, r)
-				// if r := recover(); r != nil {
-				// 	require.Equal(t, "element is not contained in the given nodeRect", r)
-				// }
+				require.Equal(t, "element is not contained in the given nodeRect", r)
 			}()
 		}
 		quadrantIdx, _ := QuadrantContaining(testCase.Input.nodeRect, testCase.Input.el)
