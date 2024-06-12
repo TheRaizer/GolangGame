@@ -66,7 +66,7 @@ func ComputeQuadRect(parentRect Rect, quadrantIdx int) *Rect {
 // Returns -1 and a nil pointer when no quadrant in quadRect contains all of el.
 func QuadrantContaining(nodeRect Rect, el QuadElement) (quadrantIdx int32, quadRect *Rect) {
 	if !nodeRect.Contains(el.Rect) {
-		panic("element is not contained in the given nodeBox")
+		panic("element is not contained in the given nodeRect")
 	}
 
 	rect := ComputeQuadRect(nodeRect, 0)

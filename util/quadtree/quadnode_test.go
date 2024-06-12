@@ -1,8 +1,10 @@
 package quadtree
 
 import (
-	"github.com/TheRaizer/GolangGame/util"
 	"testing"
+
+	"github.com/TheRaizer/GolangGame/util"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsLeaf(t *testing.T) {
@@ -15,10 +17,7 @@ func TestIsLeaf(t *testing.T) {
 		node := QuadNode{children: testCase.Input}
 		isLeaf := node.isLeaf()
 
-		if isLeaf != testCase.Expected {
-			t.Errorf("got %t, want %t", isLeaf, testCase.Expected)
-		}
-
+		require.Equal(t, testCase.Expected, isLeaf)
 	})
 }
 
@@ -63,18 +62,77 @@ func TestComputeQuadRect(t *testing.T) {
 			quadRect := ComputeQuadRect(parentRect, testCase.Input)
 
 			if testCase.Input > 3 || testCase.Input < 0 {
-				if quadRect != nil {
-					t.Errorf("got %v when it should have been nil", quadRect)
-					return
-				}
-				// is nil so do not raise errors and move onto next parentRect
+				require.Nil(t, quadRect)
 				continue
 			}
 
-			if *quadRect != *testCase.Expected[i] {
-				t.Errorf("got %v, want %v", *quadRect, *testCase.Expected[i])
-			}
+			require.Equal(t, *testCase.Expected[i], *quadRect)
+
 		}
 
+	})
+}
+
+func TestQuadrantContaining(t *testing.T) {
+	type TestInput struct {
+		nodeRect Rect
+		el       QuadElement
+	}
+
+	var cases = []util.TestCase[TestInput, int32]{
+		{
+			Name: "Should panic if element is not contained in the nodeRect",
+			Input: TestInput{
+				nodeRect: Rect{0, 0, 10, 10},
+				el:       QuadElement{Rect: Rect{20, 20, 5, 5}, Id: "id"},
+			},
+			Expected: -1,
+		},
+		{
+			Name: "Should return 0 if the element rect is contained in NW quadrant",
+			Input: TestInput{
+				nodeRect: Rect{0, 0, 10, 10},
+				el:       QuadElement{Rect: Rect{0, 0, 3, 3}, Id: "id"},
+			},
+			Expected: 0,
+		},
+		{
+			Name: "Should return 1 if the element rect is contained in NE quadrant",
+			Input: TestInput{
+				nodeRect: Rect{5, 5, 15, 15},
+				el:       QuadElement{Rect: Rect{13, 5, 5, 5}, Id: "id"},
+			},
+			Expected: 1,
+		},
+		{
+			Name: "Should return 2 if the element rect is contained in SW quadrant",
+			Input: TestInput{
+				nodeRect: Rect{6, 8, 10, 10},
+				el:       QuadElement{Rect: Rect{7, 15, 3, 3}, Id: "id"},
+			},
+			Expected: 2,
+		},
+		{
+			Name: "Should return 2 if the element rect is contained in SE quadrant",
+			Input: TestInput{
+				nodeRect: Rect{9, 2, 8, 8},
+				el:       QuadElement{Rect: Rect{7, 6, 2, 2}, Id: "id"},
+			},
+			Expected: 3,
+		},
+	}
+
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, int32]) {
+		if testCase.Expected == -1 {
+			defer func() {
+				r := recover()
+				require.NotNil(t, r)
+				// if r := recover(); r != nil {
+				// 	require.Equal(t, "element is not contained in the given nodeRect", r)
+				// }
+			}()
+		}
+		quadrantIdx, _ := QuadrantContaining(testCase.Input.nodeRect, testCase.Input.el)
+		require.Equal(t, testCase.Expected, quadrantIdx)
 	})
 }
