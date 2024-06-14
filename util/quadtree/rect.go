@@ -26,7 +26,7 @@ func (rect *Rect) Intersects(otherRect Rect) bool {
 	// the other rect's bottom is above the rects top
 
 	// we take the negation
-	return !(otherRect.Right() < rect.X || otherRect.Y > rect.Bottom() || otherRect.X > rect.Right() || otherRect.Bottom() < rect.Y)
+	return !(otherRect.Right() <= rect.X || otherRect.Y >= rect.Bottom() || otherRect.X >= rect.Right() || otherRect.Bottom() <= rect.Y)
 }
 
 func (rect *Rect) Right() int32 {

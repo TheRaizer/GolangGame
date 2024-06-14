@@ -68,14 +68,23 @@ func TestSplit(t *testing.T) {
 			Input: TestInput{
 				QuadNode{
 					els: []QuadElement{
-						{Rect{0, 0, 8, 8}, "id"},
+						{Rect{0, 0, 8, 8}, "in-parent"},
+						{Rect{0, 0, 2, 2}, "NW"},
+						{Rect{5, 0, 2, 2}, "NE"},
+						{Rect{0, 5, 2, 2}, "SW"},
+						{Rect{5, 5, 2, 2}, "SE"},
 					},
 				},
 				Rect{0, 0, 10, 10},
 			},
 			Expected: &ExpectedOutput{
-				[4]QuadNode{{}, {}, {}, {}},
-				[]QuadElement{{Rect{0, 0, 8, 8}, "id"}},
+				expectedChildren: [4]QuadNode{
+					{els: []QuadElement{{Rect{0, 0, 2, 2}, "NW"}}},
+					{els: []QuadElement{{Rect{5, 0, 2, 2}, "NE"}}},
+					{els: []QuadElement{{Rect{0, 5, 2, 2}, "SW"}}},
+					{els: []QuadElement{{Rect{5, 5, 2, 2}, "SE"}}},
+				},
+				expectedNodeEls: []QuadElement{{Rect{0, 0, 8, 8}, "in-parent"}},
 			},
 		},
 	}

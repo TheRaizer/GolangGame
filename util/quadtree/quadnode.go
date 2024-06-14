@@ -35,6 +35,8 @@ func (quadNode *QuadNode) split(quadRect Rect) {
 		}
 	}
 
+	quadNode.els = newEls
+
 }
 
 // computes the rect of a quadrant given its parent quad along with the specific quadrant idx
