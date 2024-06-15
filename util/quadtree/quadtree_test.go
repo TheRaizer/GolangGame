@@ -8,20 +8,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInsertion(t *testing.T) {
-	type TestInput struct {
-		tree QuadTree
-		els  []QuadElement
-	}
+type treeModifInput struct {
+	tree QuadTree
+	els  []QuadElement
+}
 
-	const NAME string = "should insert elements %+v into a quad tree successfully"
-	getName := func(input TestInput) string {
+func TestInsertion(t *testing.T) {
+	const NAME string = "should insert elements %+v into a quad tree correctly"
+	getName := func(input treeModifInput) string {
 		return fmt.Sprintf(NAME, input.els)
 	}
-	var cases = []util.TestCase[TestInput, QuadNode]{
+	var cases = []util.TestCase[treeModifInput, QuadNode]{
 		{
 			Name: getName,
-			Input: TestInput{
+			Input: treeModifInput{
 				QuadTree{
 					threshold:  2,
 					maxDepth:   4,
@@ -37,7 +37,7 @@ func TestInsertion(t *testing.T) {
 		},
 		{
 			Name: getName,
-			Input: TestInput{
+			Input: treeModifInput{
 				QuadTree{
 					threshold:  2,
 					maxDepth:   4,
@@ -67,7 +67,7 @@ func TestInsertion(t *testing.T) {
 		},
 		{
 			Name: getName,
-			Input: TestInput{
+			Input: treeModifInput{
 				QuadTree{
 					threshold:  2,
 					maxDepth:   2,
@@ -131,9 +131,104 @@ func TestInsertion(t *testing.T) {
 		},
 	}
 
-	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, QuadNode]) {
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[treeModifInput, QuadNode]) {
 		for _, el := range testCase.Input.els {
 			testCase.Input.tree.Insert(el)
+		}
+
+		require.Equal(t, testCase.Expected, *testCase.Input.tree.root)
+	})
+}
+
+func TestInsertPanic(t *testing.T) {
+	invalidTree := QuadTree{
+		threshold:  2,
+		maxDepth:   4,
+		globalRect: Rect{0, 0, 100, 100},
+		root:       nil,
+	}
+
+	defer func() {
+		r := recover()
+		require.NotNil(t, r)
+
+		if r != nil {
+			require.Equal(t, r, "node pointer was nil")
+		}
+	}()
+
+	invalidTree.Insert(QuadElement{Rect{0, 0, 4, 4}, "id"})
+}
+
+func TestRemove(t *testing.T) {
+	const NAME string = "should remove elements %+v from a quad tree correctly"
+	getName := func(input treeModifInput) string {
+		return fmt.Sprintf(NAME, input.els)
+	}
+
+	var cases = []util.TestCase[treeModifInput, QuadNode]{
+		{ // Test standard removal
+			Name: getName,
+			Input: treeModifInput{
+				QuadTree{
+					threshold:  2,
+					maxDepth:   4,
+					globalRect: Rect{0, 0, 100, 100},
+					root: &QuadNode{
+						els: []QuadElement{
+							{Rect{0, 0, 5, 5}, "id1"},
+						},
+					},
+				},
+				[]QuadElement{
+					{Rect{0, 0, 5, 5}, "id1"},
+				},
+			},
+			Expected: QuadNode{els: []QuadElement{}},
+		},
+		{ // Test removal that requires merging
+			Name: getName,
+			Input: treeModifInput{
+				QuadTree{
+					threshold:  2,
+					maxDepth:   4,
+					globalRect: Rect{0, 0, 100, 100},
+					root: &QuadNode{
+						children: [4]*QuadNode{
+							{
+								els: []QuadElement{
+									{Rect{0, 0, 5, 5}, "id1"},
+									{Rect{0, 0, 3, 3}, "id2"},
+								},
+							},
+							{},
+							{},
+							{
+								els: []QuadElement{
+									{Rect{0, 0, 5, 5}, "id3"},
+									{Rect{0, 0, 3, 4}, "id4"},
+								},
+							},
+						},
+					},
+				},
+				[]QuadElement{
+					{Rect{0, 0, 5, 5}, "id1"},
+					{Rect{0, 0, 3, 3}, "id2"},
+				},
+			},
+			Expected: QuadNode{
+				els: []QuadElement{
+					{Rect{0, 0, 5, 5}, "id3"},
+					{Rect{0, 0, 3, 4}, "id4"},
+				},
+			},
+		},
+	}
+
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[treeModifInput, QuadNode]) {
+		for _, el := range testCase.Input.els {
+			testCase.Input.tree.Remove(el)
 		}
 
 		require.Equal(t, testCase.Expected, *testCase.Input.tree.root)
