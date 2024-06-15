@@ -7,16 +7,11 @@ package quadtree
 // This is because hit boxes can vary greatly in size so a large hitbox that is contained in multiple
 // leaf nodes would require it to be stored multiple times.
 
-type QuadTree interface {
-	Insert(el QuadElement)
-	Remove(el QuadElement)
-}
-
 type BaseQuadTree struct {
 	nodes []QuadNode
 }
 
-type CollisionQuadTree struct {
+type QuadTree struct {
 	*BaseQuadTree
 	threshold int // max number of elements before we split the quad
 	maxDepth  int // max number of times we will allow quads to be split
@@ -26,21 +21,21 @@ type CollisionQuadTree struct {
 }
 
 // Inserts an element into the quadtree
-func (quadtree *CollisionQuadTree) Insert(el QuadElement) {
+func (quadtree *QuadTree) Insert(el QuadElement) {
 	quadtree.insert(quadtree.root, quadtree.globalRect, 0, el)
 }
 
 // Queries for elements that lie inside the given rect
-func (quadtree *CollisionQuadTree) Query(hitbox Rect) []QuadElement {
+func (quadtree *QuadTree) Query(hitbox Rect) []QuadElement {
 	return quadtree.query(quadtree.root, quadtree.globalRect, hitbox)
 }
 
 // Removes an element from the quad tree
-func (quadtree *CollisionQuadTree) Remove(el QuadElement) {
+func (quadtree *QuadTree) Remove(el QuadElement) {
 	quadtree.remove(quadtree.root, quadtree.globalRect, el)
 }
 
-func (quadtree *CollisionQuadTree) query(node *QuadNode, nodeRect Rect, hitbox Rect) []QuadElement {
+func (quadtree *QuadTree) query(node *QuadNode, nodeRect Rect, hitbox Rect) []QuadElement {
 	var intersectingEls []QuadElement
 
 	if node == nil {
@@ -75,7 +70,7 @@ func (quadtree *CollisionQuadTree) query(node *QuadNode, nodeRect Rect, hitbox R
 	return intersectingEls
 }
 
-func (quadtree *CollisionQuadTree) remove(node *QuadNode, nodeRect Rect, el QuadElement) bool {
+func (quadtree *QuadTree) remove(node *QuadNode, nodeRect Rect, el QuadElement) bool {
 	if node == nil {
 		panic("node pointer was nil")
 	}
@@ -108,7 +103,7 @@ func (quadtree *CollisionQuadTree) remove(node *QuadNode, nodeRect Rect, el Quad
 }
 
 // Attempts to merge child quads into parent.
-func (quadtree *CollisionQuadTree) tryMerge(node *QuadNode) bool {
+func (quadtree *QuadTree) tryMerge(node *QuadNode) bool {
 	if node == nil {
 		panic("when merging the node given was a null pointer")
 	}
@@ -153,7 +148,7 @@ func removeValue(node *QuadNode, el QuadElement) {
 	panic("unable to find the given element with id: " + el.Id)
 }
 
-func (quadtree *CollisionQuadTree) insert(node *QuadNode, nodeRect Rect, depth int, el QuadElement) {
+func (quadtree *QuadTree) insert(node *QuadNode, nodeRect Rect, depth int, el QuadElement) {
 	if node == nil {
 		panic("node pointer was nil")
 	}
@@ -187,12 +182,12 @@ func (quadtree *CollisionQuadTree) insert(node *QuadNode, nodeRect Rect, depth i
 }
 
 // // NOTE: untested and inefficient
-// func (quadtree *CollisionQuadTree) FindAllIntersections() [][2]QuadElement {
+// func (quadtree *QuadTree) FindAllIntersections() [][2]QuadElement {
 // 	return quadtree.findAllIntersections(quadtree.root, quadtree.globalRect)
 // }
 //
 // // return every pairwise interscetion that occurs in the tree
-// func (quadtree *CollisionQuadTree) findAllIntersections(node *QuadNode, nodeRect Rect) [][2]QuadElement {
+// func (quadtree *QuadTree) findAllIntersections(node *QuadNode, nodeRect Rect) [][2]QuadElement {
 // 	var intersections [][2]QuadElement
 //
 // 	if node == nil {
@@ -228,7 +223,7 @@ func (quadtree *CollisionQuadTree) insert(node *QuadNode, nodeRect Rect, depth i
 // }
 //
 // // find all intersections between an element stored in a branch node, and the elements of all of its descendants
-// func (quadtree *CollisionQuadTree) findAllIntersectionsInDescendants(parentNode *QuadNode, parentRect Rect, parentEl QuadElement) [][2]QuadElement {
+// func (quadtree *QuadTree) findAllIntersectionsInDescendants(parentNode *QuadNode, parentRect Rect, parentEl QuadElement) [][2]QuadElement {
 // 	var intersections [][2]QuadElement
 //
 // 	if parentNode == nil {
