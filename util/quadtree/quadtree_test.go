@@ -151,10 +151,7 @@ func TestInsertPanic(t *testing.T) {
 	defer func() {
 		r := recover()
 		require.NotNil(t, r)
-
-		if r != nil {
-			require.Equal(t, r, "node pointer was nil")
-		}
+		require.Equal(t, r, "node pointer was nil")
 	}()
 
 	invalidTree.Insert(QuadElement{Rect{0, 0, 4, 4}, "id"})
@@ -233,4 +230,40 @@ func TestRemove(t *testing.T) {
 
 		require.Equal(t, testCase.Expected, *testCase.Input.tree.root)
 	})
+}
+
+func TestRemoveWithNilPanics(t *testing.T) {
+	quadtree := QuadTree{
+		threshold:  2,
+		maxDepth:   4,
+		globalRect: Rect{0, 0, 100, 100},
+		root:       nil,
+	}
+
+	defer func() {
+		r := recover()
+
+		require.NotNil(t, r)
+		require.Equal(t, r, "node pointer was nil")
+	}()
+
+	quadtree.Remove(QuadElement{Rect{0, 0, 5, 5}, "id1"})
+}
+
+func TestRemovingUncontainedElPanics(t *testing.T) {
+	quadtree := QuadTree{
+		threshold:  2,
+		maxDepth:   4,
+		globalRect: Rect{0, 0, 100, 100},
+		root:       &QuadNode{},
+	}
+
+	defer func() {
+		r := recover()
+
+		require.NotNil(t, r)
+		require.Equal(t, r, "the given quad does not contain the element rect")
+	}()
+
+	quadtree.Remove(QuadElement{Rect{101, 101, 5, 5}, "id1"})
 }
