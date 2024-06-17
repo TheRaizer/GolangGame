@@ -48,7 +48,8 @@ func TestInsertion(t *testing.T) {
 					{Rect{0, 0, 5, 5}, "id1"},
 					{Rect{0, 0, 7, 7}, "id2"},
 					{Rect{40, 40, 8, 8}, "id3"},
-				}},
+				},
+			},
 			Expected: QuadNode{children: [4]*QuadNode{
 				{
 					children: [4]*QuadNode{{
@@ -85,7 +86,8 @@ func TestInsertion(t *testing.T) {
 					{Rect{90, 93, 4, 4}, "id8"},
 					{Rect{55, 56, 30, 30}, "id9"},
 					{Rect{55, 56, 5, 4}, "id10"},
-				}},
+				},
+			},
 			Expected: QuadNode{
 				children: [4]*QuadNode{
 					{ // NW
@@ -202,8 +204,8 @@ func TestRemove(t *testing.T) {
 							{},
 							{
 								els: []QuadElement{
-									{Rect{0, 0, 5, 5}, "id3"},
-									{Rect{0, 0, 3, 4}, "id4"},
+									{Rect{90, 90, 5, 5}, "id3"},
+									{Rect{85, 83, 3, 4}, "id4"},
 								},
 							},
 						},
@@ -216,8 +218,8 @@ func TestRemove(t *testing.T) {
 			},
 			Expected: QuadNode{
 				els: []QuadElement{
-					{Rect{0, 0, 5, 5}, "id3"},
-					{Rect{0, 0, 3, 4}, "id4"},
+					{Rect{90, 90, 5, 5}, "id3"},
+					{Rect{85, 83, 3, 4}, "id4"},
 				},
 			},
 		},
@@ -244,7 +246,7 @@ func TestRemoveWithNilPanics(t *testing.T) {
 		r := recover()
 
 		require.NotNil(t, r)
-		require.Equal(t, r, "node pointer was nil")
+		require.Equal(t, "node pointer was nil", r)
 	}()
 
 	quadtree.Remove(QuadElement{Rect{0, 0, 5, 5}, "id1"})
@@ -262,8 +264,82 @@ func TestRemovingUncontainedElPanics(t *testing.T) {
 		r := recover()
 
 		require.NotNil(t, r)
-		require.Equal(t, r, "the given quad does not contain the element rect")
+		require.Equal(t, "the given quad does not contain the element rect", r)
 	}()
 
 	quadtree.Remove(QuadElement{Rect{101, 101, 5, 5}, "id1"})
+}
+
+func TestQuery(t *testing.T) {
+	type TestInput struct {
+		tree QuadTree
+		rect Rect
+	}
+
+	const NAME string = "should find elements that intersect %+v from a quad tree correctly"
+	getName := func(input TestInput) string {
+		return fmt.Sprintf(NAME, input.rect)
+	}
+
+	var cases = []util.TestCase[TestInput, []QuadElement]{
+		{
+			Name: getName,
+			Input: TestInput{
+				QuadTree{
+					threshold:  2,
+					maxDepth:   4,
+					globalRect: Rect{0, 0, 100, 100},
+					root: &QuadNode{
+						els: []QuadElement{
+							{Rect{0, 0, 5, 5}, "id1"},
+							{Rect{24, 12, 23, 44}, "id2"},
+						},
+					},
+				},
+				Rect{0, 0, 100, 100},
+			},
+			Expected: []QuadElement{
+				{Rect{0, 0, 5, 5}, "id1"},
+				{Rect{24, 12, 23, 44}, "id2"},
+			},
+		},
+		{
+			Name: getName,
+			Input: TestInput{
+				QuadTree{
+					threshold:  2,
+					maxDepth:   4,
+					globalRect: Rect{0, 0, 80, 80},
+					root: &QuadNode{
+						children: [4]*QuadNode{
+							{
+								els: []QuadElement{
+									{Rect{0, 0, 5, 5}, "id1"},
+									{Rect{0, 0, 3, 3}, "id2"},
+								},
+							},
+							{},
+							{},
+							{
+								els: []QuadElement{
+									{Rect{70, 60, 5, 5}, "id3"},
+									{Rect{75, 73, 3, 4}, "id4"},
+								},
+							},
+						},
+					},
+				},
+				Rect{0, 0, 5, 5},
+			},
+			Expected: []QuadElement{
+				{Rect{0, 0, 5, 5}, "id1"},
+				{Rect{0, 0, 3, 3}, "id2"},
+			},
+		},
+	}
+
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, []QuadElement]) {
+		els := testCase.Input.tree.Query(testCase.Input.rect)
+		require.ElementsMatch(t, testCase.Expected, els)
+	})
 }
