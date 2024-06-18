@@ -11,6 +11,7 @@ import (
 type Game struct {
 	gameObjects map[string]GameObject
 	screen      image.Gray
+	surface     *sdl.Surface
 	running     bool
 	window      *sdl.Window
 }
@@ -30,8 +31,15 @@ func (game *Game) Init() {
 	}
 	game.window = window
 
+	surface, err := window.GetSurface()
+
+	if err != nil {
+		panic(err)
+	}
+	game.surface = surface
+
 	for _, gameObject := range game.gameObjects {
-		gameObject.OnInit()
+		gameObject.OnInit(game.surface)
 	}
 
 	game.running = true
@@ -54,13 +62,12 @@ func (game *Game) loop() {
 		lastTime = currentTime
 
 		for _, gameObject := range game.gameObjects {
-			gameObject.OnUpdate(dt)
+			gameObject.OnUpdate(dt, game.surface)
 		}
 		game.render()
 
 		delay := (1000 / display.FRAMERATE) - (sdl.GetTicks64() - currentTime)
 
-		fmt.Println(delay)
 		sdl.Delay(uint32(delay))
 	}
 
