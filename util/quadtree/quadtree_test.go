@@ -343,3 +343,21 @@ func TestQuery(t *testing.T) {
 		require.ElementsMatch(t, testCase.Expected, els)
 	})
 }
+
+func TestQueryWithNilPanics(t *testing.T) {
+	quadtree := QuadTree{
+		threshold:  2,
+		maxDepth:   4,
+		globalRect: Rect{0, 0, 100, 100},
+		root:       nil,
+	}
+
+	defer func() {
+		r := recover()
+
+		require.NotNil(t, r)
+		require.Equal(t, "node pointer was nil", r)
+	}()
+
+	quadtree.Query(Rect{101, 101, 5, 5})
+}

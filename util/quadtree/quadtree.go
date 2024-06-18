@@ -39,7 +39,7 @@ func (quadtree *QuadTree) query(node *QuadNode, nodeRect Rect, hitbox Rect) []Qu
 	var intersectingEls []QuadElement
 
 	if node == nil {
-		panic("node was nil")
+		panic("node pointer was nil")
 	}
 
 	if !nodeRect.Intersects(hitbox) {
