@@ -1,5 +1,7 @@
 package quadtree
 
+import "github.com/TheRaizer/GolangGame/util"
+
 // https://pvigier.github.io/2019/08/04/quadtree-collision-detection.html
 
 // NOTE: in this implementation every node will contain only the elements that fit within their bounds.
@@ -139,8 +141,7 @@ func (quadtree *QuadTree) tryMerge(node *QuadNode) bool {
 func removeValue(node *QuadNode, el QuadElement) {
 	for i, otherEl := range node.els {
 		if el.Id == otherEl.Id {
-			node.els[i] = node.els[len(node.els)-1]
-			node.els = node.els[:len(node.els)-1]
+			node.els = util.Slice[QuadElement](node.els).RemoveIdx(i)
 			return
 		}
 	}
