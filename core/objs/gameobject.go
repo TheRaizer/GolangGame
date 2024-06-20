@@ -1,4 +1,4 @@
-package core
+package objs
 
 import (
 	"github.com/TheRaizer/GolangGame/util"
@@ -9,17 +9,26 @@ type GameObject interface {
 	OnInit(surface *sdl.Surface)
 	OnUpdate(dt uint64, surface *sdl.Surface)
 	GetID() string
-	UpdatePos(distX float64, distY float64)
+	UpdatePos(distX float32, distY float32)
 	AddChild(child GameObject)
 	RemoveChild(id string)
 }
 
 type BaseGameObject struct {
-	Pos      Vector
-	children []GameObject
+	Pos      util.Vec2[float32]
+	name     string
+	children map[string]GameObject
 }
 
-func (obj *BaseGameObject) UpdatePos(distX float64, distY float64) {
+func NewBaseGameObject(name string, pos util.Vec2[float32]) BaseGameObject {
+	return BaseGameObject{
+		pos,
+		name,
+		make(map[string]GameObject),
+	}
+}
+
+func (obj *BaseGameObject) UpdatePos(distX float32, distY float32) {
 	obj.Pos.X += distX
 	obj.Pos.Y += distY
 
@@ -29,16 +38,15 @@ func (obj *BaseGameObject) UpdatePos(distX float64, distY float64) {
 }
 
 func (obj *BaseGameObject) AddChild(child GameObject) {
-	obj.children = append(obj.children, child)
+	obj.children[child.GetID()] = child
 }
 
 func (obj *BaseGameObject) RemoveChild(id string) {
-	for i, child := range obj.children {
-		if child.GetID() == id {
-			obj.children = util.Slice[GameObject](obj.children).RemoveIdx(i)
-			return
-		}
-	}
+	delete(obj.children, id)
+}
+
+func (obj *BaseGameObject) GetID() string {
+	return obj.name
 }
 
 func (obj *BaseGameObject) OnUpdate(dt uint64, surface *sdl.Surface) {}

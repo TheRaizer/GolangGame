@@ -4,20 +4,29 @@ import (
 	"fmt"
 	"image"
 
+	"github.com/TheRaizer/GolangGame/core/collision"
+	"github.com/TheRaizer/GolangGame/core/objs"
 	"github.com/TheRaizer/GolangGame/display"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Game struct {
-	gameObjects map[string]GameObject
+	collisionSys System[*collision.Collider]
+
+	gameObjects map[string]objs.GameObject
 	screen      image.Gray
 	surface     *sdl.Surface
 	running     bool
 	window      *sdl.Window
 }
 
-func NewGame(img image.Gray) *Game {
-	return &Game{screen: img, running: false, gameObjects: make(map[string]GameObject)}
+func NewGame(img image.Gray, collisionSys System[*collision.Collider]) Game {
+	return Game{
+		collisionSys: collisionSys,
+		screen:       img,
+		running:      false,
+		gameObjects:  make(map[string]objs.GameObject),
+	}
 }
 
 func (game *Game) Init() {
@@ -51,24 +60,40 @@ func (game *Game) render() {
 }
 
 func (game *Game) loop() {
-	var lastTime uint64 = sdl.GetTicks64()
+	var msPerUpdate int = 1000 / display.FRAMERATE
+	var current, elapsed int
+
+	previous := int(sdl.GetTicks64())
+	var lag int = 0
+
 	for game.running {
+		current = int(sdl.GetTicks64())
+		elapsed = current - previous
+		previous = current
+
+		if elapsed > 1000 {
+			continue
+		}
+
+		// compute the amount of lag since the last update call
+		lag += elapsed
+
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			game.handleEvent(event)
 		}
 
-		currentTime := sdl.GetTicks64()
-		dt := currentTime - lastTime
-		lastTime = currentTime
+		// once the lag has reached exceeded the expected update time
+		// catch up on any lag by a constant delta time value (msPerUpdate)
+		for lag >= msPerUpdate {
+			for _, gameObject := range game.gameObjects {
+				gameObject.OnUpdate(uint64(msPerUpdate), game.surface)
+			}
 
-		for _, gameObject := range game.gameObjects {
-			gameObject.OnUpdate(dt, game.surface)
+			game.collisionSys.OnLoop()
+			lag -= msPerUpdate
 		}
+
 		game.render()
-
-		delay := (1000 / display.FRAMERATE) - (sdl.GetTicks64() - currentTime)
-
-		sdl.Delay(uint32(delay))
 	}
 
 	game.Quit()
@@ -91,10 +116,10 @@ func (game *Game) Quit() {
 	game.running = false
 }
 
-func (game *Game) AddGameObject(gameObject GameObject) {
+func (game *Game) AddGameObject(gameObject objs.GameObject) {
 	game.gameObjects[gameObject.GetID()] = gameObject
 }
 
-func (game *Game) RemoveGameObject(gameObject GameObject) {
+func (game *Game) RemoveGameObject(gameObject objs.GameObject) {
 	delete(game.gameObjects, gameObject.GetID())
 }

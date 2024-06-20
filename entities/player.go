@@ -1,24 +1,23 @@
 package entities
 
 import (
-	"github.com/TheRaizer/GolangGame/core"
+	"github.com/TheRaizer/GolangGame/core/objs"
+	"github.com/TheRaizer/GolangGame/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Player struct {
-	core.BaseGameObject
+	objs.BaseGameObject
 }
 
-func NewPlayer(initPos core.Vector) *Player {
-	return &Player{
-		BaseGameObject: core.BaseGameObject{
-			Pos: initPos,
-		},
+func NewPlayer(name string, initPos util.Vec2[float32]) Player {
+	return Player{
+		BaseGameObject: objs.NewBaseGameObject(name, initPos),
 	}
 }
 
 func (player *Player) move(dt uint64) {
-	player.UpdatePos(float64(dt)*0.1, float64(dt)*0.1)
+	player.UpdatePos(float32(dt)*0.1, float32(dt)*0.1)
 }
 
 func (player *Player) OnInit(surface *sdl.Surface) {
@@ -30,8 +29,4 @@ func (player *Player) OnInit(surface *sdl.Surface) {
 
 func (player *Player) OnUpdate(dt uint64, surface *sdl.Surface) {
 	player.move(dt)
-}
-
-func (player *Player) GetID() string {
-	return "player"
 }

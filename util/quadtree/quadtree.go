@@ -15,11 +15,21 @@ type BaseQuadTree struct {
 
 type QuadTree struct {
 	*BaseQuadTree
-	threshold int // max number of elements before we split the quad
-	maxDepth  int // max number of times we will allow quads to be split
+	threshold uint8 // max number of elements before we split the quad
+	maxDepth  uint8 // max number of times we will allow quads to be split
 
 	globalRect Rect
 	root       *QuadNode
+}
+
+func NewQuadTree(threshold uint8, maxDepth uint8, globalRect Rect) QuadTree {
+	return QuadTree{
+		&BaseQuadTree{},
+		threshold,
+		maxDepth,
+		globalRect,
+		&QuadNode{},
+	}
 }
 
 // Inserts an element into the quadtree
@@ -124,7 +134,7 @@ func (quadtree *QuadTree) tryMerge(node *QuadNode) bool {
 		totalEls += len(child.els)
 	}
 
-	if totalEls <= quadtree.threshold {
+	if totalEls <= int(quadtree.threshold) {
 		for i, child := range node.children {
 			for _, childEl := range child.els {
 				node.els = append(node.els, childEl)
@@ -149,7 +159,7 @@ func removeValue(node *QuadNode, el QuadElement) {
 	panic("unable to find the given element with id: " + el.Id)
 }
 
-func (quadtree *QuadTree) insert(node *QuadNode, nodeRect Rect, depth int, el QuadElement) {
+func (quadtree *QuadTree) insert(node *QuadNode, nodeRect Rect, depth uint8, el QuadElement) {
 	if node == nil {
 		panic("node pointer was nil")
 	}
@@ -160,7 +170,7 @@ func (quadtree *QuadTree) insert(node *QuadNode, nodeRect Rect, depth int, el Qu
 
 	if node.isLeaf() {
 		// if were at max depth we want to insert the value to avoid infinite recursion
-		if depth >= quadtree.maxDepth || len(node.els) < quadtree.threshold {
+		if depth >= quadtree.maxDepth || len(node.els) < int(quadtree.threshold) {
 			node.els = append(node.els, el)
 		} else {
 			node.split(nodeRect)
