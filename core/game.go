@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"image"
 
 	"github.com/TheRaizer/GolangGame/core/collision"
@@ -78,6 +77,7 @@ func (game *Game) loop() {
 		// compute the amount of lag since the last update call
 		lag += elapsed
 
+		// handle input
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			game.handleEvent(event)
 		}
@@ -100,14 +100,16 @@ func (game *Game) loop() {
 }
 
 func (game *Game) handleEvent(event sdl.Event) {
-	switch t := event.(type) {
+	switch event.(type) {
 	case *sdl.QuitEvent:
 		game.Quit()
 		break
-	case *sdl.KeyboardEvent:
-		fmt.Println(t)
-		break
+
 	}
+	for _, gameObject := range game.gameObjects {
+		gameObject.OnInput(event)
+	}
+
 }
 
 func (game *Game) Quit() {

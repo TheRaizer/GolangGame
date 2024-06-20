@@ -20,11 +20,11 @@ func main() {
 	game := core.NewGame(*img, &collisionSys)
 
 	player := entities.NewPlayer("player", util.Vec2[float32]{X: 0, Y: 0})
-	// player.AddChild(collision.NewCollider(
-	// 	"player_collider",
-	// 	quadtree.Rect{X: 0, Y: 0, W: 32, H: 32},
-	// 	&collisionSys,
-	// ))
+	player.AddChild(collision.NewCollider(
+		"player_collider",
+		quadtree.Rect{X: 0, Y: 0, W: 32, H: 32},
+		&collisionSys,
+	))
 
 	game.AddGameObject(&player)
 	game.Init()

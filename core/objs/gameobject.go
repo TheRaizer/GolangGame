@@ -8,6 +8,7 @@ import (
 type GameObject interface {
 	OnInit(surface *sdl.Surface)
 	OnUpdate(dt uint64, surface *sdl.Surface)
+	OnInput(event sdl.Event)
 	GetID() string
 	UpdatePos(distX float32, distY float32)
 	AddChild(child GameObject)
@@ -51,3 +52,4 @@ func (obj *BaseGameObject) GetID() string {
 
 func (obj *BaseGameObject) OnUpdate(dt uint64, surface *sdl.Surface) {}
 func (obj *BaseGameObject) OnInit(surface *sdl.Surface)              {}
+func (obj *BaseGameObject) OnInput(event sdl.Event)                  {}

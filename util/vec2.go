@@ -1,6 +1,6 @@
 package util
 
-type Vec2[T int32 | int64 | float32 | float64] struct {
+type Vec2[T int8 | int16 | int32 | int64 | float32 | float64] struct {
 	X, Y T
 }
 
