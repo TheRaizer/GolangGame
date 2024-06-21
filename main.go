@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"image"
 
 	"github.com/TheRaizer/GolangGame/core"
 	"github.com/TheRaizer/GolangGame/core/collision"
+	"github.com/TheRaizer/GolangGame/core/objs"
 	"github.com/TheRaizer/GolangGame/display"
 	"github.com/TheRaizer/GolangGame/entities"
 	"github.com/TheRaizer/GolangGame/util"
@@ -24,8 +26,20 @@ func main() {
 		"player_collider",
 		datastructures.Rect{X: 0, Y: 0, W: 32, H: 32},
 		&collisionSys,
+		[]func(els []datastructures.QuadElement){
+			func(els []datastructures.QuadElement) { fmt.Println(els) },
+		},
+	))
+
+	wall := objs.NewWall("wall_1", util.Vec2[float32]{X: 50, Y: 50})
+	wall.AddChild(collision.NewCollider(
+		"wall_1_collider",
+		datastructures.Rect{X: 0, Y: 0, W: 32, H: 32},
+		&collisionSys,
+		make([]func(els []datastructures.QuadElement), 0),
 	))
 
 	game.AddGameObject(&player)
+	game.AddGameObject(&wall)
 	game.Init()
 }

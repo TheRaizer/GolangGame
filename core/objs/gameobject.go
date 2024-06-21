@@ -40,6 +40,7 @@ func (obj *BaseGameObject) UpdatePos(distX float32, distY float32) {
 
 func (obj *BaseGameObject) AddChild(child GameObject) {
 	obj.children[child.GetID()] = child
+	child.UpdatePos(obj.Pos.X, obj.Pos.Y)
 }
 
 func (obj *BaseGameObject) RemoveChild(id string) {

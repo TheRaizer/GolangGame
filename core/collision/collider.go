@@ -14,7 +14,7 @@ type Collider struct {
 	collisionMediator CollisionSystemMediator
 }
 
-func NewCollider(name string, rect datastructures.Rect, collisionSys *CollisionSystem) *Collider {
+func NewCollider(name string, rect datastructures.Rect, collisionSys *CollisionSystem, collisionEvents []func(els []datastructures.QuadElement)) *Collider {
 	collider := Collider{
 		Rect: rect,
 		BaseGameObject: objs.NewBaseGameObject(
@@ -25,6 +25,7 @@ func NewCollider(name string, rect datastructures.Rect, collisionSys *CollisionS
 			},
 		),
 		collisionMediator: collisionSys,
+		collisionEvents:   collisionEvents,
 	}
 	collisionSys.RegisterObject(&collider)
 
