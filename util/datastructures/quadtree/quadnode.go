@@ -1,4 +1,4 @@
-package quadtree
+package datastructures
 
 type QuadNode struct {
 	// NOTE: according to https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det

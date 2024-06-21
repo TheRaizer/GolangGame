@@ -8,11 +8,11 @@ import (
 	"github.com/TheRaizer/GolangGame/display"
 	"github.com/TheRaizer/GolangGame/entities"
 	"github.com/TheRaizer/GolangGame/util"
-	"github.com/TheRaizer/GolangGame/util/quadtree"
+	datastructures "github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 )
 
 func main() {
-	globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
+	globalRect := datastructures.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	collisionSys := collision.NewCollisionSystem(globalRect)
 
 	// generate a gray image
@@ -22,7 +22,7 @@ func main() {
 	player := entities.NewPlayer("player", util.Vec2[float32]{X: 0, Y: 0})
 	player.AddChild(collision.NewCollider(
 		"player_collider",
-		quadtree.Rect{X: 0, Y: 0, W: 32, H: 32},
+		datastructures.Rect{X: 0, Y: 0, W: 32, H: 32},
 		&collisionSys,
 	))
 

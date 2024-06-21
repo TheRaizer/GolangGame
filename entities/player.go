@@ -59,10 +59,10 @@ func (player *Player) OnInput(event sdl.Event) {
 				player.dir.Y = 1
 			}
 		} else if t.State == sdl.RELEASED {
-			if t.Keysym.Sym == sdl.K_LEFT || t.Keysym.Sym == sdl.K_RIGHT {
+			if (t.Keysym.Sym == sdl.K_LEFT && player.dir.X == -1) || (t.Keysym.Sym == sdl.K_RIGHT && player.dir.X == 1) {
 				player.dir.X = 0
 			}
-			if t.Keysym.Sym == sdl.K_UP || t.Keysym.Sym == sdl.K_DOWN {
+			if (t.Keysym.Sym == sdl.K_UP && player.dir.Y == -1) || (t.Keysym.Sym == sdl.K_DOWN && player.dir.Y == 1) {
 				player.dir.Y = 0
 			}
 		}

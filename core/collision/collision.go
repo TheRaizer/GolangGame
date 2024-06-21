@@ -1,21 +1,19 @@
 package collision
 
-import (
-	"github.com/TheRaizer/GolangGame/util/quadtree"
-)
+import datastructures "github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 
 type CollisionSystemMediator interface {
-	UpdateCollider(id string, oldRect quadtree.Rect, newRect quadtree.Rect)
+	UpdateCollider(id string, oldRect datastructures.Rect, newRect datastructures.Rect)
 }
 
 type CollisionSystem struct {
-	tree      quadtree.QuadTree
+	tree      datastructures.QuadTree
 	colliders map[string]*Collider
 }
 
-func NewCollisionSystem(globalRect quadtree.Rect) CollisionSystem {
+func NewCollisionSystem(globalRect datastructures.Rect) CollisionSystem {
 	return CollisionSystem{
-		tree:      quadtree.NewQuadTree(7, 5, globalRect),
+		tree:      datastructures.NewQuadTree(7, 5, globalRect),
 		colliders: make(map[string]*Collider),
 	}
 }
@@ -28,17 +26,17 @@ func (collisionSys *CollisionSystem) OnLoop() {
 }
 
 // call when updating a collider position or size
-func (collisionSys *CollisionSystem) UpdateCollider(id string, oldRect quadtree.Rect, newRect quadtree.Rect) {
-	collisionSys.tree.Remove(quadtree.QuadElement{Rect: oldRect, Id: id})
-	collisionSys.tree.Insert(quadtree.QuadElement{Rect: newRect, Id: id})
+func (collisionSys *CollisionSystem) UpdateCollider(id string, oldRect datastructures.Rect, newRect datastructures.Rect) {
+	collisionSys.tree.Remove(datastructures.QuadElement{Rect: oldRect, Id: id})
+	collisionSys.tree.Insert(datastructures.QuadElement{Rect: newRect, Id: id})
 }
 
 func (collisionSys *CollisionSystem) RegisterObject(collider *Collider) {
 	collisionSys.colliders[collider.GetID()] = collider
-	collisionSys.tree.Insert(quadtree.QuadElement{Rect: collider.Rect, Id: collider.GetID()})
+	collisionSys.tree.Insert(datastructures.QuadElement{Rect: collider.Rect, Id: collider.GetID()})
 }
 
 func (collisionSys *CollisionSystem) DeregisterObject(collider *Collider) {
 	delete(collisionSys.colliders, collider.GetID())
-	collisionSys.tree.Remove(quadtree.QuadElement{Rect: collider.Rect, Id: collider.GetID()})
+	collisionSys.tree.Remove(datastructures.QuadElement{Rect: collider.Rect, Id: collider.GetID()})
 }

@@ -1,4 +1,4 @@
-package quadtree
+package datastructures
 
 import "github.com/TheRaizer/GolangGame/util"
 
