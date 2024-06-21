@@ -18,6 +18,7 @@ func NewCollisionSystem(globalRect datastructures.Rect) CollisionSystem {
 	}
 }
 
+// Checks for collisions between registered colliders and calls their OnCollision callback
 func (collisionSys *CollisionSystem) OnLoop() {
 	for _, collider := range collisionSys.colliders {
 		els := collisionSys.tree.Query(collider.Rect)

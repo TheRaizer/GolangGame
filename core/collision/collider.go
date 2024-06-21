@@ -32,6 +32,7 @@ func NewCollider(name string, rect datastructures.Rect, collisionSys *CollisionS
 	return &collider
 }
 
+// Update the position of the collider in the collision system
 func (collider *Collider) UpdatePos(distX float32, distY float32) {
 	collider.BaseGameObject.UpdatePos(distX, distY)
 
@@ -50,6 +51,7 @@ func (collider *Collider) AddCollisionEvent(event func(els []datastructures.Quad
 	collider.collisionEvents = append(collider.collisionEvents, event)
 }
 
+// executes all the collision events with the given collision elements
 func (collider *Collider) OnCollision(els []datastructures.QuadElement) {
 	for _, event := range collider.collisionEvents {
 		event(els)

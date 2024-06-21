@@ -29,6 +29,8 @@ func NewBaseGameObject(name string, pos util.Vec2[float32]) BaseGameObject {
 	}
 }
 
+// Updates the position of the current object by displacing it.
+// This will also call UpdatePos on the children objects.
 func (obj *BaseGameObject) UpdatePos(distX float32, distY float32) {
 	obj.Pos.X += distX
 	obj.Pos.Y += distY
@@ -38,6 +40,8 @@ func (obj *BaseGameObject) UpdatePos(distX float32, distY float32) {
 	}
 }
 
+// Adds a gameobject as a child of the current gameobject.
+// The child object will move with the parent, and is positioned relative to the parent.
 func (obj *BaseGameObject) AddChild(child GameObject) {
 	obj.children[child.GetID()] = child
 	child.UpdatePos(obj.Pos.X, obj.Pos.Y)
