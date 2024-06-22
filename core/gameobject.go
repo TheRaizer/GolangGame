@@ -1,9 +1,15 @@
-package objs
+package core
 
 import (
 	"github.com/TheRaizer/GolangGame/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
+
+type GameObjectStore interface {
+	AddGameObject(gameObject GameObject)
+	RemoveGameObject(id string)
+	GetGameObject(id string) GameObject
+}
 
 type GameObject interface {
 	OnInit(surface *sdl.Surface)
@@ -16,16 +22,18 @@ type GameObject interface {
 }
 
 type BaseGameObject struct {
-	Pos      util.Vec2[float32]
-	name     string
-	children map[string]GameObject
+	Pos             util.Vec2[float32]
+	name            string
+	children        map[string]GameObject
+	gameObjectStore GameObjectStore
 }
 
-func NewBaseGameObject(name string, pos util.Vec2[float32]) BaseGameObject {
+func NewBaseGameObject(name string, pos util.Vec2[float32], gameObjectStore GameObjectStore) BaseGameObject {
 	return BaseGameObject{
 		pos,
 		name,
 		make(map[string]GameObject),
+		gameObjectStore,
 	}
 }
 
@@ -45,10 +53,12 @@ func (obj *BaseGameObject) UpdatePos(distX float32, distY float32) {
 func (obj *BaseGameObject) AddChild(child GameObject) {
 	obj.children[child.GetID()] = child
 	child.UpdatePos(obj.Pos.X, obj.Pos.Y)
+	obj.gameObjectStore.AddGameObject(child)
 }
 
 func (obj *BaseGameObject) RemoveChild(id string) {
 	delete(obj.children, id)
+	obj.gameObjectStore.RemoveGameObject(id)
 }
 
 func (obj *BaseGameObject) GetID() string {
