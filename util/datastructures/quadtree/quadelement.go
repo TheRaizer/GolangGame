@@ -1,4 +1,4 @@
-package datastructures
+package quadtree
 
 type QuadElement struct {
 	Rect
