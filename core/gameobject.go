@@ -19,6 +19,7 @@ type GameObject interface {
 	UpdatePos(distX float32, distY float32)
 	AddChild(child GameObject)
 	RemoveChild(id string)
+	GetPos() util.Vec2[float32]
 }
 
 type BaseGameObject struct {
@@ -63,6 +64,10 @@ func (obj *BaseGameObject) RemoveChild(id string) {
 
 func (obj *BaseGameObject) GetID() string {
 	return obj.name
+}
+
+func (obj *BaseGameObject) GetPos() util.Vec2[float32] {
+	return obj.Pos
 }
 
 func (obj *BaseGameObject) OnUpdate(dt uint64, surface *sdl.Surface) {}
