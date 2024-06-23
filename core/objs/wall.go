@@ -1,12 +1,13 @@
 package objs
 
 import (
+	"github.com/TheRaizer/GolangGame/core"
 	"github.com/TheRaizer/GolangGame/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Wall struct {
-	BaseGameObject
+	core.BaseGameObject
 
 	rect  *sdl.Rect
 	pixel uint32
@@ -14,9 +15,9 @@ type Wall struct {
 
 var colour = sdl.Color{R: 128, G: 128, B: 128, A: 255}
 
-func NewWall(name string, initPos util.Vec2[float32]) Wall {
+func NewWall(name string, initPos util.Vec2[float32], gameObjectStore core.GameObjectStore) Wall {
 	return Wall{
-		BaseGameObject: NewBaseGameObject(name, initPos),
+		BaseGameObject: core.NewBaseGameObject(name, initPos, gameObjectStore),
 	}
 }
 

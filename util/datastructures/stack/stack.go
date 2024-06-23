@@ -1,11 +1,13 @@
-package datastructures
+package stack
 
 type Stack[T comparable] struct {
 	items []T
 }
 
 func NewStack[T comparable]() Stack[T] {
-	return Stack[T]{}
+	return Stack[T]{
+		items: make([]T, 0),
+	}
 }
 
 func (stack *Stack[T]) Peek() T {

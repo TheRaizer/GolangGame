@@ -1,28 +1,33 @@
 package collision
 
 import (
-	"github.com/TheRaizer/GolangGame/core/objs"
+	"github.com/TheRaizer/GolangGame/core"
 	"github.com/TheRaizer/GolangGame/util"
 	datastructures "github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 )
 
 type Collider struct {
-	objs.BaseGameObject
+	core.BaseGameObject
 
 	Rect              datastructures.Rect
 	collisionEvents   []func(els []datastructures.QuadElement)
 	collisionMediator CollisionSystemMediator
 }
 
-func NewCollider(name string, rect datastructures.Rect, collisionSys *CollisionSystem, collisionEvents []func(els []datastructures.QuadElement)) *Collider {
-	collider := Collider{
-		Rect: rect,
-		BaseGameObject: objs.NewBaseGameObject(
+func NewCollider(name string,
+	rect datastructures.Rect,
+	collisionSys *CollisionSystem,
+	collisionEvents []func(els []datastructures.QuadElement),
+	gameObjectStore core.GameObjectStore,
+) *Collider {
+	collider := Collider{Rect: rect,
+		BaseGameObject: core.NewBaseGameObject(
 			name,
 			util.Vec2[float32]{
 				X: float32(rect.X),
 				Y: float32(rect.Y),
 			},
+			gameObjectStore,
 		),
 		collisionMediator: collisionSys,
 		collisionEvents:   collisionEvents,

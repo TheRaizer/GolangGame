@@ -1,10 +1,10 @@
-package core
+package game
 
 import (
 	"image"
 
+	"github.com/TheRaizer/GolangGame/core"
 	"github.com/TheRaizer/GolangGame/core/collision"
-	"github.com/TheRaizer/GolangGame/core/objs"
 	"github.com/TheRaizer/GolangGame/display"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -12,7 +12,7 @@ import (
 type Game struct {
 	collisionSys System[*collision.Collider]
 
-	gameObjects map[string]objs.GameObject
+	gameObjects map[string]core.GameObject
 	screen      image.Gray
 	surface     *sdl.Surface
 	running     bool
@@ -24,7 +24,7 @@ func NewGame(img image.Gray, collisionSys System[*collision.Collider]) Game {
 		collisionSys: collisionSys,
 		screen:       img,
 		running:      false,
-		gameObjects:  make(map[string]objs.GameObject),
+		gameObjects:  make(map[string]core.GameObject),
 	}
 }
 
@@ -109,7 +109,6 @@ func (game *Game) handleEvent(event sdl.Event) {
 	for _, gameObject := range game.gameObjects {
 		gameObject.OnInput(event)
 	}
-
 }
 
 func (game *Game) Quit() {
@@ -118,10 +117,14 @@ func (game *Game) Quit() {
 	game.running = false
 }
 
-func (game *Game) AddGameObject(gameObject objs.GameObject) {
+func (game *Game) AddGameObject(gameObject core.GameObject) {
 	game.gameObjects[gameObject.GetID()] = gameObject
 }
 
-func (game *Game) RemoveGameObject(gameObject objs.GameObject) {
-	delete(game.gameObjects, gameObject.GetID())
+func (game *Game) RemoveGameObject(id string) {
+	delete(game.gameObjects, id)
+}
+
+func (game *Game) GetGameObject(id string) core.GameObject {
+	return game.gameObjects[id]
 }

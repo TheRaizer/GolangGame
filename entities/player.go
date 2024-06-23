@@ -1,13 +1,13 @@
 package entities
 
 import (
-	"github.com/TheRaizer/GolangGame/core/objs"
+	"github.com/TheRaizer/GolangGame/core"
 	"github.com/TheRaizer/GolangGame/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Player struct {
-	objs.BaseGameObject
+	core.BaseGameObject
 
 	rect  *sdl.Rect
 	pixel uint32
@@ -17,9 +17,9 @@ type Player struct {
 
 var colour = sdl.Color{R: 255, G: 0, B: 255, A: 255} // purple
 
-func NewPlayer(name string, initPos util.Vec2[float32]) Player {
+func NewPlayer(name string, initPos util.Vec2[float32], gameObjectStore core.GameObjectStore) Player {
 	return Player{
-		BaseGameObject: objs.NewBaseGameObject(name, initPos),
+		BaseGameObject: core.NewBaseGameObject(name, initPos, gameObjectStore),
 	}
 }
 
