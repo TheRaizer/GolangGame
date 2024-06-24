@@ -147,7 +147,7 @@ func TestUpdatePosUpdatesChildrenPositions(t *testing.T) {
 	})
 }
 
-func TestAddChildAddsToChildren(t *testing.T) {
+func TestAddChild(t *testing.T) {
 	const NAME string = "should add gameobjects %+v to the parent correctly"
 	getName := func(input []*MockGameObject) string {
 		return fmt.Sprintf(NAME, input)
@@ -212,6 +212,113 @@ func TestAddChildAddsToChildren(t *testing.T) {
 			require.Equal(t, ok, true)
 			require.Equal(t, expectedObj.BaseGameObject, obj.BaseGameObject)
 		}
+	})
+
+}
+
+func TestRemoveChild(t *testing.T) {
+	type TestInput struct {
+		parentObj  *BaseGameObject
+		idToRemove string
+	}
+
+	const NAME string = "should remove child with id '%+v' from the parent correctly"
+	getName := func(input TestInput) string {
+		return fmt.Sprintf(NAME, input.idToRemove)
+	}
+
+	cases := []util.TestCase[TestInput, struct{}]{
+		{
+			Name: getName,
+			Input: TestInput{
+				parentObj: &BaseGameObject{
+					name: "id",
+					children: map[string]GameObject{
+						"id1": &BaseGameObject{name: "id1"},
+					},
+				},
+				idToRemove: "id1",
+			},
+		},
+		{
+			Name: getName,
+			Input: TestInput{
+				parentObj: &BaseGameObject{
+					name: "id",
+					children: map[string]GameObject{
+						"id1": &BaseGameObject{name: "id1"},
+						"id2": &BaseGameObject{name: "id2"},
+					},
+				},
+				idToRemove: "id2",
+			},
+		},
+	}
+
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, struct{}]) {
+		// initialize the mock store
+		mockStore := &TestGameObjectStore{}
+		mockStore.On("RemoveGameObject", testCase.Input.idToRemove)
+		testCase.Input.parentObj.gameObjectStore = mockStore
+
+		require.NotNil(t, testCase.Input.parentObj.children[testCase.Input.idToRemove])
+
+		testCase.Input.parentObj.RemoveChild(testCase.Input.idToRemove)
+
+		require.Nil(t, testCase.Input.parentObj.children[testCase.Input.idToRemove])
+		mockStore.AssertExpectations(t)
+	})
+}
+
+func TestGetID(t *testing.T) {
+	const NAME string = "should return name '%+v' from the object GetID correctly"
+	getName := func(input BaseGameObject) string {
+		return fmt.Sprintf(NAME, input.name)
+	}
+
+	cases := []util.TestCase[BaseGameObject, string]{
+		{
+			Name:     getName,
+			Input:    NewBaseGameObject("name1", util.Vec2[float32]{X: 0, Y: 0}, nil),
+			Expected: "name1",
+		},
+		{
+			Name:     getName,
+			Input:    NewBaseGameObject("another_name", util.Vec2[float32]{X: 0, Y: 0}, nil),
+			Expected: "another_name",
+		},
+	}
+
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[BaseGameObject, string]) {
+		id := testCase.Input.GetID()
+
+		require.Equal(t, testCase.Expected, id)
+	})
+
+}
+
+func TestGetPos(t *testing.T) {
+	const NAME string = "should return pos %+v from the object correctly"
+	getName := func(input BaseGameObject) string {
+		return fmt.Sprintf(NAME, input.Pos)
+	}
+
+	cases := []util.TestCase[BaseGameObject, util.Vec2[float32]]{
+		{
+			Name:     getName,
+			Input:    NewBaseGameObject("name1", util.Vec2[float32]{X: 3, Y: 31}, nil),
+			Expected: util.Vec2[float32]{X: 3, Y: 31},
+		},
+		{
+			Name:     getName,
+			Input:    NewBaseGameObject("another_name", util.Vec2[float32]{X: 32, Y: 23}, nil),
+			Expected: util.Vec2[float32]{X: 32, Y: 23},
+		},
+	}
+
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[BaseGameObject, util.Vec2[float32]]) {
+		pos := testCase.Input.GetPos()
+		require.Equal(t, testCase.Expected, pos)
 	})
 
 }
