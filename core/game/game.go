@@ -10,7 +10,7 @@ import (
 )
 
 type Game struct {
-	collisionSys System[*collision.Collider]
+	collisionSys core.System[*collision.Collider]
 
 	gameObjects map[string]core.GameObject
 	screen      image.Gray
@@ -19,7 +19,7 @@ type Game struct {
 	window      *sdl.Window
 }
 
-func NewGame(img image.Gray, collisionSys System[*collision.Collider]) Game {
+func NewGame(img image.Gray, collisionSys core.System[*collision.Collider]) Game {
 	return Game{
 		collisionSys: collisionSys,
 		screen:       img,

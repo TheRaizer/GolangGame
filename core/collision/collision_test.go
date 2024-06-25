@@ -43,7 +43,14 @@ func TestRegisterObjectShouldStoreObject(t *testing.T) {
 	collisionSys := NewCollisionSystem(quadtree.Rect{X: 0, Y: 0, W: 50, H: 50})
 
 	expectedId := "idhere"
-	collider := NewCollider(expectedId, quadtree.Rect{X: 10, Y: 10, W: 32, H: 32}, &collisionSys, []func(els []quadtree.QuadElement){}, nil)
+	collider := NewCollider(
+		expectedId,
+		quadtree.Rect{X: 10, Y: 10, W: 32, H: 32},
+		&collisionSys,
+		&collisionSys,
+		[]func(els []quadtree.QuadElement){},
+		nil,
+	)
 
 	collisionSys.RegisterObject(collider)
 
@@ -111,7 +118,14 @@ func TestDeregisterObjectShouldRemoveObjectFromQuadTree(t *testing.T) {
 func TestDeregisterObjectShouldRemoveObjFromMap(t *testing.T) {
 	collisionSys := NewCollisionSystem(quadtree.Rect{X: 0, Y: 0, W: 50, H: 50})
 	expectedId := "idhere"
-	collider := NewCollider(expectedId, quadtree.Rect{X: 10, Y: 10, W: 32, H: 32}, &collisionSys, []func(els []quadtree.QuadElement){}, nil)
+	collider := NewCollider(
+		expectedId,
+		quadtree.Rect{X: 10, Y: 10, W: 32, H: 32},
+		&collisionSys,
+		&collisionSys,
+		[]func(els []quadtree.QuadElement){},
+		nil,
+	)
 
 	collisionSys.colliders = map[string]*Collider{
 		expectedId: collider,

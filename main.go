@@ -10,11 +10,11 @@ import (
 	"github.com/TheRaizer/GolangGame/display"
 	"github.com/TheRaizer/GolangGame/entities"
 	"github.com/TheRaizer/GolangGame/util"
-	datastructures "github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
+	"github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 )
 
 func main() {
-	globalRect := datastructures.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
+	globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	collisionSys := collision.NewCollisionSystem(globalRect)
 
 	// generate a gray image
@@ -24,10 +24,11 @@ func main() {
 	player := entities.NewPlayer("player", util.Vec2[float32]{X: 0, Y: 0}, &game)
 	player.AddChild(collision.NewCollider(
 		"player_collider",
-		datastructures.Rect{X: 0, Y: 0, W: 32, H: 32},
+		quadtree.Rect{X: 0, Y: 0, W: 32, H: 32},
 		&collisionSys,
-		[]func(els []datastructures.QuadElement){
-			func(els []datastructures.QuadElement) {
+		&collisionSys,
+		[]func(els []quadtree.QuadElement){
+			func(els []quadtree.QuadElement) {
 				for _, el := range els {
 					if el.Id == "wall_1_collider" {
 						obj := game.GetGameObject(el.Id)
@@ -42,9 +43,10 @@ func main() {
 	wall := objs.NewWall("wall_1", util.Vec2[float32]{X: 50, Y: 50}, &game)
 	wall.AddChild(collision.NewCollider(
 		"wall_1_collider",
-		datastructures.Rect{X: 0, Y: 0, W: 32, H: 32},
+		quadtree.Rect{X: 0, Y: 0, W: 32, H: 32},
 		&collisionSys,
-		make([]func(els []datastructures.QuadElement), 0),
+		&collisionSys,
+		make([]func(els []quadtree.QuadElement), 0),
 		&game,
 	))
 

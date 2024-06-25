@@ -16,11 +16,13 @@ type Collider struct {
 
 func NewCollider(name string,
 	rect quadtree.Rect,
-	collisionSys *CollisionSystem,
+	system core.System[*Collider],
+	collisionMediator CollisionSystemMediator,
 	collisionEvents []func(els []quadtree.QuadElement),
 	gameObjectStore core.GameObjectStore,
 ) *Collider {
-	collider := Collider{Rect: rect,
+	collider := Collider{
+		Rect: rect,
 		BaseGameObject: core.NewBaseGameObject(
 			name,
 			util.Vec2[float32]{
@@ -29,10 +31,10 @@ func NewCollider(name string,
 			},
 			gameObjectStore,
 		),
-		collisionMediator: collisionSys,
+		collisionMediator: collisionMediator,
 		collisionEvents:   collisionEvents,
 	}
-	collisionSys.RegisterObject(&collider)
+	system.RegisterObject(&collider)
 
 	return &collider
 }
