@@ -12,8 +12,9 @@ type CollisionSystem struct {
 }
 
 func NewCollisionSystem(globalRect quadtree.Rect) CollisionSystem {
+	tree := quadtree.NewQuadTree(7, 5, globalRect)
 	return CollisionSystem{
-		tree:      quadtree.NewQuadTree(7, 5, globalRect),
+		tree:      &tree,
 		colliders: make(map[string]*Collider),
 	}
 }

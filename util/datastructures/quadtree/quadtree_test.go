@@ -9,7 +9,7 @@ import (
 )
 
 type treeModifInput struct {
-	tree QuadTree
+	tree BaseQuadTree
 	els  []QuadElement
 }
 
@@ -22,7 +22,7 @@ func TestInsertion(t *testing.T) {
 		{
 			Name: getName,
 			Input: treeModifInput{
-				QuadTree{
+				BaseQuadTree{
 					threshold:  2,
 					maxDepth:   4,
 					globalRect: Rect{0, 0, 100, 100},
@@ -38,7 +38,7 @@ func TestInsertion(t *testing.T) {
 		{
 			Name: getName,
 			Input: treeModifInput{
-				QuadTree{
+				BaseQuadTree{
 					threshold:  2,
 					maxDepth:   4,
 					globalRect: Rect{0, 0, 100, 100},
@@ -69,7 +69,7 @@ func TestInsertion(t *testing.T) {
 		{
 			Name: getName,
 			Input: treeModifInput{
-				QuadTree{
+				BaseQuadTree{
 					threshold:  2,
 					maxDepth:   2,
 					globalRect: Rect{0, 0, 100, 100},
@@ -143,7 +143,7 @@ func TestInsertion(t *testing.T) {
 }
 
 func TestInsertPanic(t *testing.T) {
-	invalidTree := QuadTree{
+	invalidTree := BaseQuadTree{
 		threshold:  2,
 		maxDepth:   4,
 		globalRect: Rect{0, 0, 100, 100},
@@ -169,7 +169,7 @@ func TestRemove(t *testing.T) {
 		{ // Test standard removal
 			Name: getName,
 			Input: treeModifInput{
-				QuadTree{
+				BaseQuadTree{
 					threshold:  2,
 					maxDepth:   4,
 					globalRect: Rect{0, 0, 100, 100},
@@ -188,7 +188,7 @@ func TestRemove(t *testing.T) {
 		{ // Test removal that requires merging
 			Name: getName,
 			Input: treeModifInput{
-				QuadTree{
+				BaseQuadTree{
 					threshold:  2,
 					maxDepth:   4,
 					globalRect: Rect{0, 0, 100, 100},
@@ -235,7 +235,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveWithNilPanics(t *testing.T) {
-	quadtree := QuadTree{
+	quadtree := BaseQuadTree{
 		threshold:  2,
 		maxDepth:   4,
 		globalRect: Rect{0, 0, 100, 100},
@@ -253,7 +253,7 @@ func TestRemoveWithNilPanics(t *testing.T) {
 }
 
 func TestRemovingUncontainedElPanics(t *testing.T) {
-	quadtree := QuadTree{
+	quadtree := BaseQuadTree{
 		threshold:  2,
 		maxDepth:   4,
 		globalRect: Rect{0, 0, 100, 100},
@@ -272,7 +272,7 @@ func TestRemovingUncontainedElPanics(t *testing.T) {
 
 func TestQuery(t *testing.T) {
 	type TestInput struct {
-		tree QuadTree
+		tree BaseQuadTree
 		rect Rect
 	}
 
@@ -285,7 +285,7 @@ func TestQuery(t *testing.T) {
 		{
 			Name: getName,
 			Input: TestInput{
-				QuadTree{
+				BaseQuadTree{
 					threshold:  2,
 					maxDepth:   4,
 					globalRect: Rect{0, 0, 100, 100},
@@ -306,7 +306,7 @@ func TestQuery(t *testing.T) {
 		{
 			Name: getName,
 			Input: TestInput{
-				QuadTree{
+				BaseQuadTree{
 					threshold:  2,
 					maxDepth:   4,
 					globalRect: Rect{0, 0, 80, 80},
@@ -345,7 +345,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryWithNilPanics(t *testing.T) {
-	quadtree := QuadTree{
+	quadtree := BaseQuadTree{
 		threshold:  2,
 		maxDepth:   4,
 		globalRect: Rect{0, 0, 100, 100},

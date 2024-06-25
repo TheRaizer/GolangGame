@@ -35,7 +35,7 @@ func (obj *MockGameObject) UpdatePos(distX float32, distY float32) {
 	obj.Called(distX, distY)
 }
 
-func TestUpdatePosUpdatesCurrentObjectPos(t *testing.T) {
+func TestUpdatePosShouldUpdateCurrentObjectPos(t *testing.T) {
 	type TestInput struct {
 		initialPos util.Vec2[float32]
 		distance   util.Vec2[float32]
@@ -70,7 +70,7 @@ func TestUpdatePosUpdatesCurrentObjectPos(t *testing.T) {
 	})
 }
 
-func TestUpdatePosUpdatesChildrenPositions(t *testing.T) {
+func TestUpdatePosShouldUpdateChildrenPositions(t *testing.T) {
 	type TestInput struct {
 		parentObj BaseGameObject
 		distance  util.Vec2[float32]

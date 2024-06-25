@@ -4,17 +4,13 @@ import "github.com/TheRaizer/GolangGame/util"
 
 // https://pvigier.github.io/2019/08/04/quadtree-collision-detection.html
 
-// NOTE: in this implementation every node will contain only the elements that fit within their bounds.
-// This is compared with an implementation where only leaf nodes contain their contents
-// This is because hit boxes can vary greatly in size so a large hitbox that is contained in multiple
-// leaf nodes would require it to be stored multiple times.
-
-type BaseQuadTree struct {
-	nodes []QuadNode
+type QuadTree interface {
+	Insert(el QuadElement)
+	Query(hitbox Rect) []QuadElement
+	Remove(el QuadElement)
 }
 
-type QuadTree struct {
-	*BaseQuadTree
+type BaseQuadTree struct {
 	threshold uint8 // max number of elements before we split the quad
 	maxDepth  uint8 // max number of times we will allow quads to be split
 
@@ -22,9 +18,8 @@ type QuadTree struct {
 	root       *QuadNode
 }
 
-func NewQuadTree(threshold uint8, maxDepth uint8, globalRect Rect) QuadTree {
-	return QuadTree{
-		&BaseQuadTree{},
+func NewQuadTree(threshold uint8, maxDepth uint8, globalRect Rect) BaseQuadTree {
+	return BaseQuadTree{
 		threshold,
 		maxDepth,
 		globalRect,
@@ -33,21 +28,21 @@ func NewQuadTree(threshold uint8, maxDepth uint8, globalRect Rect) QuadTree {
 }
 
 // Inserts an element into the quadtree
-func (quadtree *QuadTree) Insert(el QuadElement) {
+func (quadtree *BaseQuadTree) Insert(el QuadElement) {
 	quadtree.insert(quadtree.root, quadtree.globalRect, 0, el)
 }
 
 // Queries for elements that lie inside the given rect
-func (quadtree *QuadTree) Query(hitbox Rect) []QuadElement {
+func (quadtree *BaseQuadTree) Query(hitbox Rect) []QuadElement {
 	return quadtree.query(quadtree.root, quadtree.globalRect, hitbox)
 }
 
 // Removes an element from the quad tree
-func (quadtree *QuadTree) Remove(el QuadElement) {
+func (quadtree *BaseQuadTree) Remove(el QuadElement) {
 	quadtree.remove(quadtree.root, quadtree.globalRect, el)
 }
 
-func (quadtree *QuadTree) query(node *QuadNode, nodeRect Rect, hitbox Rect) []QuadElement {
+func (quadtree *BaseQuadTree) query(node *QuadNode, nodeRect Rect, hitbox Rect) []QuadElement {
 	var intersectingEls []QuadElement
 
 	if node == nil {
@@ -82,7 +77,7 @@ func (quadtree *QuadTree) query(node *QuadNode, nodeRect Rect, hitbox Rect) []Qu
 	return intersectingEls
 }
 
-func (quadtree *QuadTree) remove(node *QuadNode, nodeRect Rect, el QuadElement) bool {
+func (quadtree *BaseQuadTree) remove(node *QuadNode, nodeRect Rect, el QuadElement) bool {
 	if node == nil {
 		panic("node pointer was nil")
 	}
@@ -115,7 +110,7 @@ func (quadtree *QuadTree) remove(node *QuadNode, nodeRect Rect, el QuadElement) 
 }
 
 // Attempts to merge child quads into parent.
-func (quadtree *QuadTree) tryMerge(node *QuadNode) bool {
+func (quadtree *BaseQuadTree) tryMerge(node *QuadNode) bool {
 	if node == nil {
 		panic("when merging the node given was a null pointer")
 	}
@@ -159,7 +154,7 @@ func removeValue(node *QuadNode, el QuadElement) {
 	panic("unable to find the given element with id: " + el.Id)
 }
 
-func (quadtree *QuadTree) insert(node *QuadNode, nodeRect Rect, depth uint8, el QuadElement) {
+func (quadtree *BaseQuadTree) insert(node *QuadNode, nodeRect Rect, depth uint8, el QuadElement) {
 	if node == nil {
 		panic("node pointer was nil")
 	}
