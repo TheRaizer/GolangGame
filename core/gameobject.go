@@ -20,9 +20,12 @@ type GameObject interface {
 	AddChild(child GameObject)
 	RemoveChild(id string)
 	GetPos() util.Vec2[float32]
+	GetParent() GameObject
+	SetParent(parent GameObject)
 }
 
 type BaseGameObject struct {
+	parent          GameObject
 	Pos             util.Vec2[float32]
 	name            string
 	children        map[string]GameObject
@@ -31,6 +34,7 @@ type BaseGameObject struct {
 
 func NewBaseGameObject(name string, pos util.Vec2[float32], gameObjectStore GameObjectStore) BaseGameObject {
 	return BaseGameObject{
+		nil,
 		pos,
 		name,
 		make(map[string]GameObject),
@@ -55,11 +59,22 @@ func (obj *BaseGameObject) AddChild(child GameObject) {
 	obj.children[child.GetID()] = child
 	child.UpdatePos(obj.Pos.X, obj.Pos.Y)
 	obj.gameObjectStore.AddGameObject(child)
+	child.SetParent(obj)
 }
 
 func (obj *BaseGameObject) RemoveChild(id string) {
+	child := obj.children[id]
+	child.SetParent(nil)
 	delete(obj.children, id)
 	obj.gameObjectStore.RemoveGameObject(id)
+}
+
+func (obj *BaseGameObject) GetParent() GameObject {
+	return obj.parent
+}
+
+func (obj *BaseGameObject) SetParent(parent GameObject) {
+	obj.parent = parent
 }
 
 func (obj *BaseGameObject) GetID() string {

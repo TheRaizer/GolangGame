@@ -36,6 +36,7 @@ func TestNewColliderShouldAddObjectIntoCollisionSys(t *testing.T) {
 		mockSys,
 		make([]func(els []quadtree.QuadElement), 0),
 		nil,
+		false,
 	)
 
 	mockSys.AssertExpectations(t)
@@ -111,6 +112,7 @@ func TestUpdatePosShouldUpdateColliderInSys(t *testing.T) {
 			mockSys,
 			make([]func(els []quadtree.QuadElement), 0),
 			nil,
+			false,
 		)
 
 		collider.UpdatePos(testCase.Input.distance.X, testCase.Input.distance.Y)

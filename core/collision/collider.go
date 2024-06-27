@@ -6,12 +6,14 @@ import (
 	"github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 )
 
+// Expected to represent the collision area of its parent
 type Collider struct {
 	core.BaseGameObject
 
 	Rect              quadtree.Rect
 	collisionEvents   []func(els []quadtree.QuadElement)
 	collisionMediator CollisionSystemMediator
+	isTrigger         bool
 }
 
 func NewCollider(name string,
@@ -20,6 +22,7 @@ func NewCollider(name string,
 	collisionMediator CollisionSystemMediator,
 	collisionEvents []func(els []quadtree.QuadElement),
 	gameObjectStore core.GameObjectStore,
+	isTrigger bool,
 ) *Collider {
 	collider := Collider{
 		Rect: rect,
@@ -33,6 +36,7 @@ func NewCollider(name string,
 		),
 		collisionMediator: collisionMediator,
 		collisionEvents:   collisionEvents,
+		isTrigger:         isTrigger,
 	}
 	system.RegisterObject(&collider)
 
