@@ -34,11 +34,11 @@ func (collisionSys *CollisionSystem) UpdateCollider(id string, oldRect quadtree.
 }
 
 func (collisionSys *CollisionSystem) RegisterObject(collider *Collider) {
-	collisionSys.colliders[collider.GetID()] = collider
-	collisionSys.tree.Insert(quadtree.QuadElement{Rect: collider.Rect, Id: collider.GetID()})
+	collisionSys.colliders[collider.ID()] = collider
+	collisionSys.tree.Insert(quadtree.QuadElement{Rect: collider.Rect, Id: collider.ID()})
 }
 
 func (collisionSys *CollisionSystem) DeregisterObject(collider *Collider) {
-	delete(collisionSys.colliders, collider.GetID())
-	collisionSys.tree.Remove(quadtree.QuadElement{Rect: collider.Rect, Id: collider.GetID()})
+	delete(collisionSys.colliders, collider.ID())
+	collisionSys.tree.Remove(quadtree.QuadElement{Rect: collider.Rect, Id: collider.ID()})
 }

@@ -30,13 +30,13 @@ func TestNewColliderShouldAddObjectIntoCollisionSys(t *testing.T) {
 	mockSys.On("RegisterObject", mock.AnythingOfType("Collider"))
 
 	collider := NewCollider(
+		0,
 		"name",
 		quadtree.Rect{},
 		mockSys,
 		mockSys,
 		make([]func(els []quadtree.QuadElement), 0),
 		nil,
-		false,
 	)
 
 	mockSys.AssertExpectations(t)
@@ -106,13 +106,13 @@ func TestUpdatePosShouldUpdateColliderInSys(t *testing.T) {
 		)
 
 		collider := NewCollider(
+			0,
 			testCase.Input.id,
 			testCase.Input.rect,
 			mockSys,
 			mockSys,
 			make([]func(els []quadtree.QuadElement), 0),
 			nil,
-			false,
 		)
 
 		collider.UpdatePos(testCase.Input.distance.X, testCase.Input.distance.Y)

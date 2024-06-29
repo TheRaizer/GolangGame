@@ -15,25 +15,27 @@ type GameObject interface {
 	OnInit(surface *sdl.Surface)
 	OnUpdate(dt uint64, surface *sdl.Surface)
 	OnInput(event sdl.Event)
-	GetID() string
+	ID() string
 	UpdatePos(distX float32, distY float32)
 	AddChild(child GameObject)
 	RemoveChild(id string)
-	GetPos() util.Vec2[float32]
-	GetParent() GameObject
+	Parent() GameObject
 	SetParent(parent GameObject)
+	Layer() int
 }
 
 type BaseGameObject struct {
+	layer           int
 	parent          GameObject
 	Pos             util.Vec2[float32]
 	name            string
 	children        map[string]GameObject
-	gameObjectStore GameObjectStore
+	GameObjectStore GameObjectStore
 }
 
-func NewBaseGameObject(name string, pos util.Vec2[float32], gameObjectStore GameObjectStore) BaseGameObject {
+func NewBaseGameObject(layer int, name string, pos util.Vec2[float32], gameObjectStore GameObjectStore) BaseGameObject {
 	return BaseGameObject{
+		layer,
 		nil,
 		pos,
 		name,
@@ -56,9 +58,9 @@ func (obj *BaseGameObject) UpdatePos(distX float32, distY float32) {
 // Adds a gameobject as a child of the current gameobject.
 // The child object will move with the parent, and is positioned relative to the parent.
 func (obj *BaseGameObject) AddChild(child GameObject) {
-	obj.children[child.GetID()] = child
+	obj.children[child.ID()] = child
 	child.UpdatePos(obj.Pos.X, obj.Pos.Y)
-	obj.gameObjectStore.AddGameObject(child)
+	obj.GameObjectStore.AddGameObject(child)
 	child.SetParent(obj)
 }
 
@@ -66,10 +68,10 @@ func (obj *BaseGameObject) RemoveChild(id string) {
 	child := obj.children[id]
 	child.SetParent(nil)
 	delete(obj.children, id)
-	obj.gameObjectStore.RemoveGameObject(id)
+	obj.GameObjectStore.RemoveGameObject(id)
 }
 
-func (obj *BaseGameObject) GetParent() GameObject {
+func (obj *BaseGameObject) Parent() GameObject {
 	return obj.parent
 }
 
@@ -77,12 +79,12 @@ func (obj *BaseGameObject) SetParent(parent GameObject) {
 	obj.parent = parent
 }
 
-func (obj *BaseGameObject) GetID() string {
+func (obj *BaseGameObject) ID() string {
 	return obj.name
 }
 
-func (obj *BaseGameObject) GetPos() util.Vec2[float32] {
-	return obj.Pos
+func (obj *BaseGameObject) Layer() int {
+	return obj.layer
 }
 
 func (obj *BaseGameObject) OnUpdate(dt uint64, surface *sdl.Surface) {}

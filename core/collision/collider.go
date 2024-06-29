@@ -13,20 +13,21 @@ type Collider struct {
 	Rect              quadtree.Rect
 	collisionEvents   []func(els []quadtree.QuadElement)
 	collisionMediator CollisionSystemMediator
-	isTrigger         bool
 }
 
-func NewCollider(name string,
+func NewCollider(
+	layer int,
+	name string,
 	rect quadtree.Rect,
 	system core.System[*Collider],
 	collisionMediator CollisionSystemMediator,
 	collisionEvents []func(els []quadtree.QuadElement),
 	gameObjectStore core.GameObjectStore,
-	isTrigger bool,
 ) *Collider {
 	collider := Collider{
 		Rect: rect,
 		BaseGameObject: core.NewBaseGameObject(
+			layer,
 			name,
 			util.Vec2[float32]{
 				X: float32(rect.X),
@@ -36,7 +37,6 @@ func NewCollider(name string,
 		),
 		collisionMediator: collisionMediator,
 		collisionEvents:   collisionEvents,
-		isTrigger:         isTrigger,
 	}
 	system.RegisterObject(&collider)
 
@@ -54,7 +54,7 @@ func (collider *Collider) UpdatePos(distX float32, distY float32) {
 		H: collider.Rect.H,
 	}
 
-	collider.collisionMediator.UpdateCollider(collider.GetID(), collider.Rect, newRect)
+	collider.collisionMediator.UpdateCollider(collider.ID(), collider.Rect, newRect)
 	collider.Rect = newRect
 }
 

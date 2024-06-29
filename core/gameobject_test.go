@@ -62,7 +62,7 @@ func TestUpdatePosShouldUpdateCurrentObjectPos(t *testing.T) {
 
 	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, util.Vec2[float32]]) {
 
-		gameObject := NewBaseGameObject("test_name", testCase.Input.initialPos, &TestGameObjectStore{})
+		gameObject := NewBaseGameObject(0, "test_name", testCase.Input.initialPos, &TestGameObjectStore{})
 
 		gameObject.UpdatePos(testCase.Input.distance.X, testCase.Input.distance.Y)
 
@@ -140,9 +140,12 @@ func TestUpdatePosShouldUpdateChildrenPositions(t *testing.T) {
 	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, map[string]util.Vec2[float32]]) {
 		testCase.Input.parentObj.UpdatePos(testCase.Input.distance.X, testCase.Input.distance.Y)
 
-		for id, children := range testCase.Input.parentObj.children {
+		for id, child := range testCase.Input.parentObj.children {
 			require.NotNil(t, testCase.Expected[id])
-			require.Equal(t, testCase.Expected[id], children.GetPos())
+
+			child, ok := child.(*BaseGameObject)
+			require.True(t, ok)
+			require.Equal(t, testCase.Expected[id], child.Pos)
 		}
 	})
 }
@@ -189,7 +192,7 @@ func TestAddChild(t *testing.T) {
 
 	util.IterateTestCases(cases, t, func(testCase util.TestCase[[]*MockGameObject, map[string]*MockGameObject]) {
 		mockStore := TestGameObjectStore{}
-		parentObj := NewBaseGameObject("test_name", util.Vec2[float32]{X: 0, Y: 0}, &mockStore)
+		parentObj := NewBaseGameObject(0, "test_name", util.Vec2[float32]{X: 0, Y: 0}, &mockStore)
 
 		for _, child := range testCase.Input {
 			// setup call expectations
@@ -208,6 +211,7 @@ func TestAddChild(t *testing.T) {
 
 			// cast so we can compare the BaseGameObject
 			obj, ok := parentObj.children[id].(*MockGameObject)
+			expectedObj.parent = &parentObj // set parent
 
 			require.Equal(t, ok, true)
 			require.Equal(t, expectedObj.BaseGameObject, obj.BaseGameObject)
@@ -259,7 +263,7 @@ func TestRemoveChild(t *testing.T) {
 		// initialize the mock store
 		mockStore := &TestGameObjectStore{}
 		mockStore.On("RemoveGameObject", testCase.Input.idToRemove)
-		testCase.Input.parentObj.gameObjectStore = mockStore
+		testCase.Input.parentObj.GameObjectStore = mockStore
 
 		require.NotNil(t, testCase.Input.parentObj.children[testCase.Input.idToRemove])
 
@@ -270,8 +274,8 @@ func TestRemoveChild(t *testing.T) {
 	})
 }
 
-func TestGetID(t *testing.T) {
-	const NAME string = "should return name '%+v' from the object GetID correctly"
+func TestIDRetrieval(t *testing.T) {
+	const NAME string = "should return name '%+v' from the object ID correctly"
 	getName := func(input BaseGameObject) string {
 		return fmt.Sprintf(NAME, input.name)
 	}
@@ -279,18 +283,18 @@ func TestGetID(t *testing.T) {
 	cases := []util.TestCase[BaseGameObject, string]{
 		{
 			Name:     getName,
-			Input:    NewBaseGameObject("name1", util.Vec2[float32]{X: 0, Y: 0}, nil),
+			Input:    NewBaseGameObject(0, "name1", util.Vec2[float32]{X: 0, Y: 0}, nil),
 			Expected: "name1",
 		},
 		{
 			Name:     getName,
-			Input:    NewBaseGameObject("another_name", util.Vec2[float32]{X: 0, Y: 0}, nil),
+			Input:    NewBaseGameObject(0, "another_name", util.Vec2[float32]{X: 0, Y: 0}, nil),
 			Expected: "another_name",
 		},
 	}
 
 	util.IterateTestCases(cases, t, func(testCase util.TestCase[BaseGameObject, string]) {
-		id := testCase.Input.GetID()
+		id := testCase.Input.ID()
 
 		require.Equal(t, testCase.Expected, id)
 	})
@@ -306,19 +310,18 @@ func TestGetPos(t *testing.T) {
 	cases := []util.TestCase[BaseGameObject, util.Vec2[float32]]{
 		{
 			Name:     getName,
-			Input:    NewBaseGameObject("name1", util.Vec2[float32]{X: 3, Y: 31}, nil),
+			Input:    NewBaseGameObject(0, "name1", util.Vec2[float32]{X: 3, Y: 31}, nil),
 			Expected: util.Vec2[float32]{X: 3, Y: 31},
 		},
 		{
 			Name:     getName,
-			Input:    NewBaseGameObject("another_name", util.Vec2[float32]{X: 32, Y: 23}, nil),
+			Input:    NewBaseGameObject(0, "another_name", util.Vec2[float32]{X: 32, Y: 23}, nil),
 			Expected: util.Vec2[float32]{X: 32, Y: 23},
 		},
 	}
 
 	util.IterateTestCases(cases, t, func(testCase util.TestCase[BaseGameObject, util.Vec2[float32]]) {
-		pos := testCase.Input.GetPos()
-		require.Equal(t, testCase.Expected, pos)
+		require.Equal(t, testCase.Expected, testCase.Input.Pos)
 	})
 
 }

@@ -2,27 +2,40 @@ package objs
 
 import (
 	"github.com/TheRaizer/GolangGame/core"
+	"github.com/TheRaizer/GolangGame/core/collision"
 	"github.com/TheRaizer/GolangGame/util"
 	"github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 type RigidBody struct {
 	core.BaseGameObject
 
-	// TODO: should every rigid body have a reference to a collider? should i automatically add an on collison event?
-	// TODO: on that collision event should it ComputePosOnCollision and update the parent with the new position?
-	// outline requirements and functionality of a rigid body
-	dir      util.Vec2[int8]
-	velocity float32
+	Dir      util.Vec2[int8]
+	Velocity float32
+	collider *collision.Collider
 }
 
-func NewRigidBody(name string, initialVel float32, gameObjectStore core.GameObjectStore) RigidBody {
+func NewRigidBody(layer int, name string, initialVel float32, gameObjectStore core.GameObjectStore, collider *collision.Collider) RigidBody {
 	return RigidBody{
-		BaseGameObject: core.NewBaseGameObject(name, util.Vec2[float32]{}, gameObjectStore),
-		dir:            util.Vec2[int8]{},
+		BaseGameObject: core.NewBaseGameObject(layer, name, util.Vec2[float32]{}, gameObjectStore),
+		Dir:            util.Vec2[int8]{},
+		Velocity:       0,
+		collider:       collider,
 	}
 }
 
-// compute the position of the rect after being blocked by the otherRect
-func (rb RigidBody) ComputePosOnCollision(rect quadtree.Rect, otherRect quadtree.Rect) util.Vec2[float32] {
+func (rb *RigidBody) OnInit(surface *sdl.Surface) {
+	rb.collider.AddCollisionEvent(rb.restrictParent)
+}
+
+func (rb *RigidBody) restrictParent(els []quadtree.QuadElement) {
+	for _, el := range els {
+		obj := rb.GameObjectStore.GetGameObject(el.Id)
+		if obj.Layer() != rb.Layer() {
+			if rb.collider.Rect.Right() > el.Rect.X {
+				rb.Parent().UpdatePos(float32(el.Rect.X-rb.collider.Rect.Right()), 0)
+			}
+		}
+	}
 }

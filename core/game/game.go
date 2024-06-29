@@ -118,7 +118,7 @@ func (game *Game) Quit() {
 }
 
 func (game *Game) AddGameObject(gameObject core.GameObject) {
-	game.gameObjects[gameObject.GetID()] = gameObject
+	game.gameObjects[gameObject.ID()] = gameObject
 }
 
 func (game *Game) RemoveGameObject(id string) {

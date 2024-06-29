@@ -2,6 +2,7 @@ package entities
 
 import (
 	"github.com/TheRaizer/GolangGame/core"
+	"github.com/TheRaizer/GolangGame/core/objs"
 	"github.com/TheRaizer/GolangGame/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -11,21 +12,21 @@ type Player struct {
 
 	rect  *sdl.Rect
 	pixel uint32
-	dir   util.Vec2[int8]
-	speed uint8
+	rb    objs.RigidBody
 }
 
 var colour = sdl.Color{R: 255, G: 0, B: 255, A: 255} // purple
 
-func NewPlayer(name string, initPos util.Vec2[float32], gameObjectStore core.GameObjectStore) Player {
+func NewPlayer(name string, initPos util.Vec2[float32], gameObjectStore core.GameObjectStore, rb objs.RigidBody) Player {
 	return Player{
-		BaseGameObject: core.NewBaseGameObject(name, initPos, gameObjectStore),
+		BaseGameObject: core.NewBaseGameObject(core.PLAYER_LAYER, name, initPos, gameObjectStore),
+		rb:             rb,
 	}
 }
 
 func (player *Player) move(dt uint64) {
-	if player.dir.X != 0 || player.dir.Y != 0 {
-		player.UpdatePos(float32(player.dir.X)*float32(dt)*0.1, float32(player.dir.Y)*float32(dt)*0.1)
+	if player.rb.Dir.X != 0 || player.rb.Dir.Y != 0 {
+		player.UpdatePos(float32(player.rb.Dir.X)*float32(dt)*0.1, float32(player.rb.Dir.Y)*float32(dt)*0.1)
 		player.rect.X = int32(player.Pos.X)
 		player.rect.Y = int32(player.Pos.Y)
 	}
@@ -49,21 +50,21 @@ func (player *Player) OnInput(event sdl.Event) {
 	case *sdl.KeyboardEvent:
 		if t.State == sdl.PRESSED {
 			if t.Keysym.Sym == sdl.K_LEFT {
-				player.dir.X = -1
+				player.rb.Dir.X = -1
 			} else if t.Keysym.Sym == sdl.K_RIGHT {
-				player.dir.X = 1
+				player.rb.Dir.X = 1
 			}
 			if t.Keysym.Sym == sdl.K_UP {
-				player.dir.Y = -1
+				player.rb.Dir.Y = -1
 			} else if t.Keysym.Sym == sdl.K_DOWN {
-				player.dir.Y = 1
+				player.rb.Dir.Y = 1
 			}
 		} else if t.State == sdl.RELEASED {
-			if (t.Keysym.Sym == sdl.K_LEFT && player.dir.X == -1) || (t.Keysym.Sym == sdl.K_RIGHT && player.dir.X == 1) {
-				player.dir.X = 0
+			if (t.Keysym.Sym == sdl.K_LEFT && player.rb.Dir.X == -1) || (t.Keysym.Sym == sdl.K_RIGHT && player.rb.Dir.X == 1) {
+				player.rb.Dir.X = 0
 			}
-			if (t.Keysym.Sym == sdl.K_UP && player.dir.Y == -1) || (t.Keysym.Sym == sdl.K_DOWN && player.dir.Y == 1) {
-				player.dir.Y = 0
+			if (t.Keysym.Sym == sdl.K_UP && player.rb.Dir.Y == -1) || (t.Keysym.Sym == sdl.K_DOWN && player.rb.Dir.Y == 1) {
+				player.rb.Dir.Y = 0
 			}
 		}
 		break
