@@ -59,7 +59,11 @@ func (rb *RigidBody) OnUpdate(dt uint64, surface *sdl.Surface) {
 	}
 }
 
+// TODO: tackle the tunelling problem
 func (rb *RigidBody) continousCollisionDetect(distX float32, distY float32) {
+	// TODO: to tackle the tunelling problem instead of checking collisions with future position we can
+	// detect collisions with the parallelogram from the current position to the future position.
+	// if there are any collisions then deal with them accordingly
 	newRect := quadtree.Rect{
 		X: int32(rb.collider.Pos.X + distX),
 		Y: int32(rb.collider.Pos.Y + distY),
