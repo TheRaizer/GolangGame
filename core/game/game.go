@@ -85,11 +85,12 @@ func (game *Game) loop() {
 		// once the lag has reached exceeded the expected update time
 		// catch up on any lag by a constant delta time value (msPerUpdate)
 		for lag >= msPerUpdate {
+			game.collisionSys.OnLoop()
+
 			for _, gameObject := range game.gameObjects {
 				gameObject.OnUpdate(uint64(msPerUpdate), game.surface)
 			}
 
-			game.collisionSys.OnLoop()
 			lag -= msPerUpdate
 		}
 
@@ -118,6 +119,9 @@ func (game *Game) Quit() {
 }
 
 func (game *Game) AddGameObject(gameObject core.GameObject) {
+	if game.gameObjects[gameObject.ID()] != nil {
+		panic("duplicate id: " + gameObject.ID())
+	}
 	game.gameObjects[gameObject.ID()] = gameObject
 }
 

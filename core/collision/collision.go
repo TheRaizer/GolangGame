@@ -4,6 +4,7 @@ import "github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 
 type CollisionSystemMediator interface {
 	UpdateCollider(id string, oldRect quadtree.Rect, newRect quadtree.Rect)
+	DetectCollisions(rect quadtree.Rect) []quadtree.QuadElement
 }
 
 type CollisionSystem struct {
@@ -25,6 +26,11 @@ func (collisionSys *CollisionSystem) OnLoop() {
 		els := collisionSys.tree.Query(collider.Rect)
 		collider.OnCollision(els)
 	}
+}
+
+func (collisionSys *CollisionSystem) DetectCollisions(rect quadtree.Rect) []quadtree.QuadElement {
+	els := collisionSys.tree.Query(rect)
+	return els
 }
 
 // call when updating a collider position or size
