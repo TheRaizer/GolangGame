@@ -30,7 +30,7 @@ func main() {
 		[]func(els []quadtree.QuadElement){},
 		&game,
 	)
-	rb := objs.NewRigidBody(core.PLAYER_LAYER, "player_rb", 0.1, &game, collider, &collisionSys, true)
+	rb := objs.NewRigidBody(core.PLAYER_LAYER, "player_rb", 0.2, &game, collider, &collisionSys, true)
 	player := entities.NewPlayer("player", util.Vec2[float32]{X: 0, Y: 0}, &game, &rb)
 
 	player.AddChild(collider)

@@ -38,29 +38,17 @@ func NewRigidBody(
 	}
 }
 
-func (rb *RigidBody) OnInit(surface *sdl.Surface) {
-	if !rb.isContinous {
-		// add collision event that restricts parent on the frame update (discrete)
-		rb.collider.AddCollisionEvent(rb.restrictParent)
-	}
-}
-
 func (rb *RigidBody) OnUpdate(dt uint64, surface *sdl.Surface) {
 	if rb.Dir.X != 0 || rb.Dir.Y != 0 {
 		distX := float32(rb.Dir.X) * float32(dt) * rb.Velocity
 		distY := float32(rb.Dir.Y) * float32(dt) * rb.Velocity
 
-		if rb.isContinous {
-			rb.continousCollisionDetect(distX, distY)
-		} else {
-			// move on the restriction event registered OnInit
-			rb.moveOnRestriction(distX, distY)
-		}
+		rb.detectCollision(distX, distY)
 	}
 }
 
 // TODO: tackle the tunelling problem
-func (rb *RigidBody) continousCollisionDetect(distX float32, distY float32) {
+func (rb *RigidBody) detectCollision(distX float32, distY float32) {
 	// TODO: to tackle the tunelling problem instead of checking collisions with future position we can
 	// detect collisions with the parallelogram from the current position to the future position.
 	// if there are any collisions then deal with them accordingly
@@ -80,12 +68,17 @@ func (rb *RigidBody) moveOnRestriction(distX float32, distY float32) {
 	if rb.restriction == 0 {
 		rb.Parent().UpdatePos(0, distY)
 	}
+
 	if rb.restriction == 1 {
 		rb.Parent().UpdatePos(distX, 0)
 	}
 
 	if rb.restriction == 2 {
-		rb.Parent().UpdatePos(distX, distY)
+		if rb.Dir.X == rb.Dir.Y {
+			rb.Parent().UpdatePos(distX*0.7071, distY*0.7071) // 0.7071 approx 1/sqrt(2) = magnitude of (1, 1) vector
+		} else {
+			rb.Parent().UpdatePos(distX, distY)
+		}
 	}
 }
 
