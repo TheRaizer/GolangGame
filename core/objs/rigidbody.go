@@ -43,7 +43,12 @@ func (rb *RigidBody) OnUpdate(dt uint64, surface *sdl.Surface) {
 		distX := float32(rb.Dir.X) * float32(dt) * rb.Velocity
 		distY := float32(rb.Dir.Y) * float32(dt) * rb.Velocity
 
-		rb.detectCollision(distX, distY)
+		if rb.Dir.X == rb.Dir.Y {
+			rb.detectCollision(distX*0.7071, distY*0.7071) // 0.7071 approx 1/sqrt(2) = magnitude of (1, 1) vector
+
+		} else {
+			rb.detectCollision(distX, distY)
+		}
 	}
 }
 
@@ -75,7 +80,7 @@ func (rb *RigidBody) moveOnRestriction(distX float32, distY float32) {
 
 	if rb.restriction == 2 {
 		if rb.Dir.X == rb.Dir.Y {
-			rb.Parent().UpdatePos(distX*0.7071, distY*0.7071) // 0.7071 approx 1/sqrt(2) = magnitude of (1, 1) vector
+			rb.Parent().UpdatePos(distX, distY)
 		} else {
 			rb.Parent().UpdatePos(distX, distY)
 		}
