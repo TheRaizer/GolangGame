@@ -59,8 +59,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 		collisionRect quadtree.Rect
 	}
 
-	type TestExpected struct {
-		// the new position of the parent element
+	type TestExpected struct { // the new position of the parent element
 		pos util.Vec2[float32]
 		// the rectangle used to detect collisions in the future position
 		rect quadtree.Rect
@@ -188,7 +187,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 	})
 }
 
-func TestOnUpdateShouldRestrictMovement(t *testing.T) {
+func TestOnUpdateShouldRestrictMovementDiscrete(t *testing.T) {
 	type TestInput struct {
 		dt               uint64
 		dir              util.Vec2[int8]
@@ -224,13 +223,40 @@ func TestOnUpdateShouldRestrictMovement(t *testing.T) {
 				pos: util.Vec2[float32]{X: 0, Y: float32(10) * 0.7071},
 			},
 		},
+		{
+			Name: getName,
+			Input: TestInput{
+				dt:            5,
+				dir:           util.Vec2[int8]{X: 0, Y: 1},
+				velocity:      2,
+				collisionRect: quadtree.Rect{X: 0, Y: 2, W: 5, H: 5},
+				elementsToDetect: []quadtree.QuadElement{
+					{Id: "id", Rect: quadtree.Rect{X: 2, Y: 10, W: 5, H: 5}},
+				},
+			},
+			Expected: TestExpected{
+				pos: util.Vec2[float32]{X: 0, Y: 5},
+			},
+		},
+		{
+			Name: getName,
+			Input: TestInput{
+				dt:            5,
+				dir:           util.Vec2[int8]{X: -1, Y: 0},
+				velocity:      1,
+				collisionRect: quadtree.Rect{X: 20, Y: 2, W: 5, H: 5},
+				elementsToDetect: []quadtree.QuadElement{
+					{Id: "id", Rect: quadtree.Rect{X: 10, Y: 5, W: 8, H: 8}},
+				},
+			},
+			Expected: TestExpected{
+				pos: util.Vec2[float32]{X: 18, Y: 2},
+			},
+		},
 	}
 
 	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, TestExpected]) {
 		store := MockGameObjectStore{}
-
-		// set parent and children with layer 1 since mock restrictions will have layer 0
-		// and we only restrict when layers differ
 		parent := core.NewBaseGameObject(
 			1,
 			"parent",
@@ -240,7 +266,6 @@ func TestOnUpdateShouldRestrictMovement(t *testing.T) {
 			},
 			&store,
 		)
-		// detect elements that may cause restrictions
 		collisionSys := MockCollisionSystem{elementsToDetect: testCase.Input.elementsToDetect}
 		collider := collision.NewCollider(
 			1,
@@ -268,3 +293,7 @@ func TestOnUpdateShouldRestrictMovement(t *testing.T) {
 		collisionSys.AssertExpectations(t)
 	})
 }
+
+// TODO: implement this that should still restrict movement when dt and velocity are large
+// that the future position is passed the restricting object
+// func TestOnUpdateShouldRestrictMovementContinuous(t *testing.T) {}
