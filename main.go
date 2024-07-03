@@ -30,17 +30,19 @@ func main() {
 		[]func(els []quadtree.QuadElement){},
 		&game,
 	)
-	rb := objs.NewRigidBody(core.PLAYER_LAYER, "player_rb", 0.2, &game, collider, &collisionSys, true)
-	player := entities.NewPlayer("player", util.Vec2[float32]{X: 0, Y: 0}, &game, &rb)
+	rb := objs.NewRigidBody(core.PLAYER_LAYER, "player_rb", util.Vec2[float32]{}, &game, collider, &collisionSys, true)
+	player := entities.NewPlayer("player", util.Vec2[float32]{X: 0, Y: 0}, 120, &game, &rb)
 
 	player.AddChild(collider)
 	player.AddChild(&rb)
 
-	wall := objs.NewWall("wall_1", util.Vec2[float32]{X: 50, Y: 50}, &game)
+	var wallWidth int32 = 300
+	var wallHeight int32 = 32
+	wall := objs.NewWall("wall_1", util.Vec2[float32]{X: 0, Y: 500}, &game, wallWidth, wallHeight)
 	wall.AddChild(collision.NewCollider(
 		core.WALL_LAYER,
 		"wall_1_collider",
-		quadtree.Rect{X: 0, Y: 0, W: 32, H: 32},
+		quadtree.Rect{X: 0, Y: 0, W: wallWidth, H: wallHeight},
 		&collisionSys,
 		&collisionSys,
 		make([]func(els []quadtree.QuadElement), 0),

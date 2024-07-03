@@ -11,8 +11,7 @@ import (
 type RigidBody struct {
 	core.BaseGameObject
 
-	Dir          util.Vec2[int8]
-	Speed        float32
+	Velocity     *util.Vec2[float32]
 	collider     *collision.Collider
 	collisionSys collision.CollisionSystemMediator
 	restriction  uint8 // 0 = horizontal, 1 = vertical, 2 = none
@@ -22,7 +21,7 @@ type RigidBody struct {
 func NewRigidBody(
 	layer int,
 	name string,
-	initialVel float32,
+	initialVel util.Vec2[float32],
 	gameObjectStore core.GameObjectStore,
 	collider *collision.Collider,
 	collisionSys collision.CollisionSystemMediator,
@@ -30,8 +29,7 @@ func NewRigidBody(
 ) RigidBody {
 	return RigidBody{
 		BaseGameObject: core.NewBaseGameObject(layer, name, util.Vec2[float32]{}, gameObjectStore),
-		Dir:            util.Vec2[int8]{},
-		Speed:          initialVel,
+		Velocity:       &initialVel,
 		collider:       collider,
 		collisionSys:   collisionSys,
 		isContinous:    isContinous,
@@ -39,16 +37,11 @@ func NewRigidBody(
 }
 
 func (rb *RigidBody) OnUpdate(dt uint64, surface *sdl.Surface) {
-	if rb.Dir.X != 0 || rb.Dir.Y != 0 {
-		distX := float32(rb.Dir.X) * float32(dt) * rb.Speed
-		distY := float32(rb.Dir.Y) * float32(dt) * rb.Speed
+	if rb.Velocity.X != 0 || rb.Velocity.Y != 0 {
+		distX := float32(rb.Velocity.X) * (float32(dt) / 1000)
+		distY := float32(rb.Velocity.Y) * (float32(dt) / 1000)
 
-		if rb.Dir.X == rb.Dir.Y {
-			rb.detectCollision(distX*0.7071, distY*0.7071) // 0.7071 approx 1/sqrt(2) = magnitude of (1, 1) vector
-
-		} else {
-			rb.detectCollision(distX, distY)
-		}
+		rb.detectCollision(distX, distY)
 	}
 }
 
@@ -79,11 +72,7 @@ func (rb *RigidBody) moveOnRestriction(distX float32, distY float32) {
 	}
 
 	if rb.restriction == 2 {
-		if rb.Dir.X == rb.Dir.Y {
-			rb.Parent().UpdatePos(distX, distY)
-		} else {
-			rb.Parent().UpdatePos(distX, distY)
-		}
+		rb.Parent().UpdatePos(distX, distY)
 	}
 }
 
