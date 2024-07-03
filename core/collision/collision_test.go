@@ -44,6 +44,7 @@ func TestRegisterObjectShouldStoreObject(t *testing.T) {
 
 	expectedId := "idhere"
 	collider := NewCollider(
+		0,
 		expectedId,
 		quadtree.Rect{X: 10, Y: 10, W: 32, H: 32},
 		&collisionSys,
@@ -70,6 +71,7 @@ func TestRegisterObjectShouldInsertIntoQuadTree(t *testing.T) {
 	expectedId := "idhere"
 	collider := &Collider{
 		BaseGameObject: core.NewBaseGameObject(
+			0,
 			expectedId,
 			util.Vec2[float32]{},
 			nil,
@@ -92,6 +94,7 @@ func TestDeregisterObjectShouldRemoveObjectFromQuadTree(t *testing.T) {
 	expectedId := "id"
 	colliderToRemove := &Collider{
 		BaseGameObject: core.NewBaseGameObject(
+			0,
 			expectedId,
 			util.Vec2[float32]{},
 			nil,
@@ -119,6 +122,7 @@ func TestDeregisterObjectShouldRemoveObjFromMap(t *testing.T) {
 	collisionSys := NewCollisionSystem(quadtree.Rect{X: 0, Y: 0, W: 50, H: 50})
 	expectedId := "idhere"
 	collider := NewCollider(
+		0,
 		expectedId,
 		quadtree.Rect{X: 10, Y: 10, W: 32, H: 32},
 		&collisionSys,
@@ -157,6 +161,7 @@ func TestOnLoop(t *testing.T) {
 	mockTree := &QuadTreeMock{}
 	collider1 := &Collider{
 		BaseGameObject: core.NewBaseGameObject(
+			0,
 			"id1",
 			util.Vec2[float32]{},
 			nil,
@@ -176,6 +181,7 @@ func TestOnLoop(t *testing.T) {
 	}
 	collider2 := &Collider{
 		BaseGameObject: core.NewBaseGameObject(
+			0,
 			"id1",
 			util.Vec2[float32]{},
 			nil,

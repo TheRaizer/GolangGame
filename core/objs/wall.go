@@ -17,7 +17,7 @@ var colour = sdl.Color{R: 128, G: 128, B: 128, A: 255}
 
 func NewWall(name string, initPos util.Vec2[float32], gameObjectStore core.GameObjectStore) Wall {
 	return Wall{
-		BaseGameObject: core.NewBaseGameObject(name, initPos, gameObjectStore),
+		BaseGameObject: core.NewBaseGameObject(core.WALL_LAYER, name, initPos, gameObjectStore),
 	}
 }
 

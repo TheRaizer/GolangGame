@@ -6,6 +6,7 @@ import (
 	"github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 )
 
+// Expected to represent the collision area of its parent
 type Collider struct {
 	core.BaseGameObject
 
@@ -14,7 +15,9 @@ type Collider struct {
 	collisionMediator CollisionSystemMediator
 }
 
-func NewCollider(name string,
+func NewCollider(
+	layer int,
+	name string,
 	rect quadtree.Rect,
 	system core.System[*Collider],
 	collisionMediator CollisionSystemMediator,
@@ -24,6 +27,7 @@ func NewCollider(name string,
 	collider := Collider{
 		Rect: rect,
 		BaseGameObject: core.NewBaseGameObject(
+			layer,
 			name,
 			util.Vec2[float32]{
 				X: float32(rect.X),
@@ -50,7 +54,7 @@ func (collider *Collider) UpdatePos(distX float32, distY float32) {
 		H: collider.Rect.H,
 	}
 
-	collider.collisionMediator.UpdateCollider(collider.GetID(), collider.Rect, newRect)
+	collider.collisionMediator.UpdateCollider(collider.ID(), collider.Rect, newRect)
 	collider.Rect = newRect
 }
 
