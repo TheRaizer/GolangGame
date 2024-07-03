@@ -217,7 +217,6 @@ func TestAddChild(t *testing.T) {
 			require.Equal(t, expectedObj.BaseGameObject, obj.BaseGameObject)
 		}
 	})
-
 }
 
 func TestRemoveChild(t *testing.T) {
@@ -298,7 +297,6 @@ func TestIDRetrieval(t *testing.T) {
 
 		require.Equal(t, testCase.Expected, id)
 	})
-
 }
 
 func TestGetPos(t *testing.T) {
@@ -323,5 +321,13 @@ func TestGetPos(t *testing.T) {
 	util.IterateTestCases(cases, t, func(testCase util.TestCase[BaseGameObject, util.Vec2[float32]]) {
 		require.Equal(t, testCase.Expected, testCase.Input.Pos)
 	})
+}
 
+func TestShouldReturnTheSetParent(t *testing.T) {
+	parent := NewBaseGameObject(0, "parent_name", util.Vec2[float32]{X: 3, Y: 31}, nil)
+	child := NewBaseGameObject(0, "child_name", util.Vec2[float32]{X: 2, Y: 0}, nil)
+
+	require.Nil(t, child.Parent())
+	child.SetParent(&parent)
+	require.Equal(t, child.Parent(), &parent)
 }

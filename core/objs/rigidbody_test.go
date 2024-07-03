@@ -286,7 +286,113 @@ func TestOnUpdateShouldRestrictMovementDiscrete(t *testing.T) {
 
 		store.On("GetGameObject", mock.Anything)
 		collisionSys.Mock.On("DetectCollisions", mock.Anything)
+		rb.OnUpdate(testCase.Input.dt, nil)
 
+		require.Equal(t, testCase.Expected.pos, parent.Pos)
+		collisionSys.AssertExpectations(t)
+	})
+}
+
+func TestOnUpdateShouldNotRestrictWhenSameLayer(t *testing.T) {
+	type TestInput struct {
+		dt               uint64
+		dir              util.Vec2[int8]
+		velocity         float32
+		collisionRect    quadtree.Rect
+		elementsToDetect []quadtree.QuadElement
+	}
+
+	type TestExpected struct {
+		// the new position of the parent element
+		pos util.Vec2[float32]
+	}
+
+	const NAME string = "should update position from %+v with restrictions"
+	getName := func(input TestInput) string {
+		return fmt.Sprintf(NAME, input.collisionRect)
+	}
+
+	cases := []util.TestCase[TestInput, TestExpected]{
+		{
+			Name: getName,
+			Input: TestInput{
+				dt:            10,
+				dir:           util.Vec2[int8]{X: 1, Y: 1},
+				velocity:      1,
+				collisionRect: quadtree.Rect{X: 0, Y: 0, W: 5, H: 5},
+				elementsToDetect: []quadtree.QuadElement{
+					{Id: "id", Rect: quadtree.Rect{X: 5, Y: 0, W: 5, H: 5}},
+				},
+			},
+			Expected: TestExpected{
+				// account for diagonal speed reduction
+				pos: util.Vec2[float32]{X: float32(10) * 0.7071, Y: float32(10) * 0.7071},
+			},
+		},
+		{
+			Name: getName,
+			Input: TestInput{
+				dt:            5,
+				dir:           util.Vec2[int8]{X: 0, Y: 1},
+				velocity:      2,
+				collisionRect: quadtree.Rect{X: 0, Y: 2, W: 5, H: 5},
+				elementsToDetect: []quadtree.QuadElement{
+					{Id: "id", Rect: quadtree.Rect{X: 2, Y: 10, W: 5, H: 5}},
+				},
+			},
+			Expected: TestExpected{
+				pos: util.Vec2[float32]{X: 0, Y: 2 + float32(5)*2},
+			},
+		},
+		{
+			Name: getName,
+			Input: TestInput{
+				dt:            5,
+				dir:           util.Vec2[int8]{X: -1, Y: 0},
+				velocity:      1,
+				collisionRect: quadtree.Rect{X: 20, Y: 2, W: 5, H: 5},
+				elementsToDetect: []quadtree.QuadElement{
+					{Id: "id", Rect: quadtree.Rect{X: 10, Y: 5, W: 8, H: 8}},
+				},
+			},
+			Expected: TestExpected{
+				pos: util.Vec2[float32]{X: 20 - float32(5), Y: 2},
+			},
+		},
+	}
+
+	util.IterateTestCases(cases, t, func(testCase util.TestCase[TestInput, TestExpected]) {
+		store := MockGameObjectStore{}
+		// give same layer as the detected elements so that collision should not happen
+		parent := core.NewBaseGameObject(
+			0,
+			"parent",
+			util.Vec2[float32]{
+				X: float32(testCase.Input.collisionRect.X),
+				Y: float32(testCase.Input.collisionRect.Y),
+			},
+			&store,
+		)
+		collisionSys := MockCollisionSystem{elementsToDetect: testCase.Input.elementsToDetect}
+		collider := collision.NewCollider(
+			0,
+			"rb_collider",
+			testCase.Input.collisionRect,
+			&collisionSys,
+			&collisionSys,
+			[]func(els []quadtree.QuadElement){},
+			&store,
+		)
+		rb := NewRigidBody(0, "rigidbody", testCase.Input.velocity, &store, collider, &collisionSys, false)
+
+		rb.SetParent(&parent)
+		collider.SetParent(&parent)
+		rb.Pos = parent.Pos
+
+		rb.Dir = testCase.Input.dir
+
+		store.On("GetGameObject", mock.Anything)
+		collisionSys.Mock.On("DetectCollisions", mock.Anything)
 		rb.OnUpdate(testCase.Input.dt, nil)
 
 		require.Equal(t, testCase.Expected.pos, parent.Pos)
