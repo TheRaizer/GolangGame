@@ -173,6 +173,7 @@ func TestUpdatePosShouldUpdateColliderRect(t *testing.T) {
 		)
 
 		collider := NewCollider(
+			0,
 			"id",
 			testCase.Input.rect,
 			mockSys,
@@ -192,6 +193,7 @@ func TestAddCollisionEventShouldRegisterEvent(t *testing.T) {
 	mockSys.On("RegisterObject", mock.Anything)
 
 	collider := NewCollider(
+		0,
 		"id",
 		quadtree.Rect{},
 		mockSys,
@@ -215,6 +217,7 @@ func TestOnCollisionShouldCallCollisionEvents(t *testing.T) {
 	mockSys.On("RegisterObject", mock.Anything)
 
 	collider := NewCollider(
+		0,
 		"id",
 		quadtree.Rect{},
 		mockSys,

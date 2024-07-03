@@ -12,7 +12,7 @@ type RigidBody struct {
 	core.BaseGameObject
 
 	Dir          util.Vec2[int8]
-	Velocity     float32
+	Speed        float32
 	collider     *collision.Collider
 	collisionSys collision.CollisionSystemMediator
 	restriction  uint8 // 0 = horizontal, 1 = vertical, 2 = none
@@ -31,7 +31,7 @@ func NewRigidBody(
 	return RigidBody{
 		BaseGameObject: core.NewBaseGameObject(layer, name, util.Vec2[float32]{}, gameObjectStore),
 		Dir:            util.Vec2[int8]{},
-		Velocity:       initialVel,
+		Speed:          initialVel,
 		collider:       collider,
 		collisionSys:   collisionSys,
 		isContinous:    isContinous,
@@ -40,8 +40,8 @@ func NewRigidBody(
 
 func (rb *RigidBody) OnUpdate(dt uint64, surface *sdl.Surface) {
 	if rb.Dir.X != 0 || rb.Dir.Y != 0 {
-		distX := float32(rb.Dir.X) * float32(dt) * rb.Velocity
-		distY := float32(rb.Dir.Y) * float32(dt) * rb.Velocity
+		distX := float32(rb.Dir.X) * float32(dt) * rb.Speed
+		distY := float32(rb.Dir.Y) * float32(dt) * rb.Speed
 
 		if rb.Dir.X == rb.Dir.Y {
 			rb.detectCollision(distX*0.7071, distY*0.7071) // 0.7071 approx 1/sqrt(2) = magnitude of (1, 1) vector

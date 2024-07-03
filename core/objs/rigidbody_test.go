@@ -55,7 +55,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 	type TestInput struct {
 		dt            uint64
 		dir           util.Vec2[int8]
-		velocity      float32
+		speed         float32
 		collisionRect quadtree.Rect
 	}
 
@@ -76,7 +76,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 			Input: TestInput{
 				dt:            10,
 				dir:           util.Vec2[int8]{X: 1, Y: 1},
-				velocity:      1,
+				speed:         1,
 				collisionRect: quadtree.Rect{X: 0, Y: 0, W: 5, H: 5},
 			},
 			Expected: TestExpected{
@@ -92,7 +92,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 			Input: TestInput{
 				dt:            2,
 				dir:           util.Vec2[int8]{X: 1, Y: 0},
-				velocity:      2,
+				speed:         2,
 				collisionRect: quadtree.Rect{X: 5, Y: 5, W: 5, H: 5},
 			},
 			Expected: TestExpected{
@@ -107,7 +107,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 			Input: TestInput{
 				dt:            1,
 				dir:           util.Vec2[int8]{X: 0, Y: 1},
-				velocity:      1,
+				speed:         1,
 				collisionRect: quadtree.Rect{X: 3, Y: 4, W: 15, H: 15},
 			},
 			Expected: TestExpected{
@@ -122,7 +122,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 			Input: TestInput{
 				dt:            1,
 				dir:           util.Vec2[int8]{X: 0, Y: 1},
-				velocity:      1,
+				speed:         1,
 				collisionRect: quadtree.Rect{X: 3, Y: 4, W: 15, H: 15},
 			},
 			Expected: TestExpected{
@@ -137,7 +137,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 			Input: TestInput{
 				dt:            16,
 				dir:           util.Vec2[int8]{X: -1, Y: 0},
-				velocity:      2,
+				speed:         2,
 				collisionRect: quadtree.Rect{X: 50, Y: 5, W: 15, H: 15},
 			},
 			Expected: TestExpected{
@@ -170,7 +170,7 @@ func TestOnUpdateShouldMoveParentWhenNotRestricted(t *testing.T) {
 			[]func(els []quadtree.QuadElement){},
 			nil,
 		)
-		rb := NewRigidBody(0, "rigidbody", testCase.Input.velocity, nil, collider, &collisionSys, false)
+		rb := NewRigidBody(0, "rigidbody", testCase.Input.speed, nil, collider, &collisionSys, false)
 
 		rb.SetParent(&parent)
 		collider.SetParent(&parent)
@@ -191,7 +191,7 @@ func TestOnUpdateShouldRestrictMovementDiscrete(t *testing.T) {
 	type TestInput struct {
 		dt               uint64
 		dir              util.Vec2[int8]
-		velocity         float32
+		speed            float32
 		collisionRect    quadtree.Rect
 		elementsToDetect []quadtree.QuadElement
 	}
@@ -212,7 +212,7 @@ func TestOnUpdateShouldRestrictMovementDiscrete(t *testing.T) {
 			Input: TestInput{
 				dt:            10,
 				dir:           util.Vec2[int8]{X: 1, Y: 1},
-				velocity:      1,
+				speed:         1,
 				collisionRect: quadtree.Rect{X: 0, Y: 0, W: 5, H: 5},
 				elementsToDetect: []quadtree.QuadElement{
 					{Id: "id", Rect: quadtree.Rect{X: 5, Y: 0, W: 5, H: 5}},
@@ -228,7 +228,7 @@ func TestOnUpdateShouldRestrictMovementDiscrete(t *testing.T) {
 			Input: TestInput{
 				dt:            5,
 				dir:           util.Vec2[int8]{X: 0, Y: 1},
-				velocity:      2,
+				speed:         2,
 				collisionRect: quadtree.Rect{X: 0, Y: 2, W: 5, H: 5},
 				elementsToDetect: []quadtree.QuadElement{
 					{Id: "id", Rect: quadtree.Rect{X: 2, Y: 10, W: 5, H: 5}},
@@ -243,7 +243,7 @@ func TestOnUpdateShouldRestrictMovementDiscrete(t *testing.T) {
 			Input: TestInput{
 				dt:            5,
 				dir:           util.Vec2[int8]{X: -1, Y: 0},
-				velocity:      1,
+				speed:         1,
 				collisionRect: quadtree.Rect{X: 20, Y: 2, W: 5, H: 5},
 				elementsToDetect: []quadtree.QuadElement{
 					{Id: "id", Rect: quadtree.Rect{X: 10, Y: 5, W: 8, H: 8}},
@@ -276,7 +276,7 @@ func TestOnUpdateShouldRestrictMovementDiscrete(t *testing.T) {
 			[]func(els []quadtree.QuadElement){},
 			&store,
 		)
-		rb := NewRigidBody(1, "rigidbody", testCase.Input.velocity, &store, collider, &collisionSys, false)
+		rb := NewRigidBody(1, "rigidbody", testCase.Input.speed, &store, collider, &collisionSys, false)
 
 		rb.SetParent(&parent)
 		collider.SetParent(&parent)
@@ -297,7 +297,7 @@ func TestOnUpdateShouldNotRestrictWhenSameLayer(t *testing.T) {
 	type TestInput struct {
 		dt               uint64
 		dir              util.Vec2[int8]
-		velocity         float32
+		speed            float32
 		collisionRect    quadtree.Rect
 		elementsToDetect []quadtree.QuadElement
 	}
@@ -318,7 +318,7 @@ func TestOnUpdateShouldNotRestrictWhenSameLayer(t *testing.T) {
 			Input: TestInput{
 				dt:            10,
 				dir:           util.Vec2[int8]{X: 1, Y: 1},
-				velocity:      1,
+				speed:         1,
 				collisionRect: quadtree.Rect{X: 0, Y: 0, W: 5, H: 5},
 				elementsToDetect: []quadtree.QuadElement{
 					{Id: "id", Rect: quadtree.Rect{X: 5, Y: 0, W: 5, H: 5}},
@@ -334,7 +334,7 @@ func TestOnUpdateShouldNotRestrictWhenSameLayer(t *testing.T) {
 			Input: TestInput{
 				dt:            5,
 				dir:           util.Vec2[int8]{X: 0, Y: 1},
-				velocity:      2,
+				speed:         2,
 				collisionRect: quadtree.Rect{X: 0, Y: 2, W: 5, H: 5},
 				elementsToDetect: []quadtree.QuadElement{
 					{Id: "id", Rect: quadtree.Rect{X: 2, Y: 10, W: 5, H: 5}},
@@ -349,7 +349,7 @@ func TestOnUpdateShouldNotRestrictWhenSameLayer(t *testing.T) {
 			Input: TestInput{
 				dt:            5,
 				dir:           util.Vec2[int8]{X: -1, Y: 0},
-				velocity:      1,
+				speed:         1,
 				collisionRect: quadtree.Rect{X: 20, Y: 2, W: 5, H: 5},
 				elementsToDetect: []quadtree.QuadElement{
 					{Id: "id", Rect: quadtree.Rect{X: 10, Y: 5, W: 8, H: 8}},
@@ -383,7 +383,7 @@ func TestOnUpdateShouldNotRestrictWhenSameLayer(t *testing.T) {
 			[]func(els []quadtree.QuadElement){},
 			&store,
 		)
-		rb := NewRigidBody(0, "rigidbody", testCase.Input.velocity, &store, collider, &collisionSys, false)
+		rb := NewRigidBody(0, "rigidbody", testCase.Input.speed, &store, collider, &collisionSys, false)
 
 		rb.SetParent(&parent)
 		collider.SetParent(&parent)
@@ -400,6 +400,6 @@ func TestOnUpdateShouldNotRestrictWhenSameLayer(t *testing.T) {
 	})
 }
 
-// TODO: implement this that should still restrict movement when dt and velocity are large
+// TODO: implement this that should still restrict movement when dt and speed are large
 // that the future position is passed the restricting object
 // func TestOnUpdateShouldRestrictMovementContinuous(t *testing.T) {}
