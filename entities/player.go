@@ -11,11 +11,13 @@ import (
 type Player struct {
 	core.BaseGameObject
 
-	rect    *sdl.Rect
-	pixel   uint32
-	rb      *objs.RigidBody
-	surface *sdl.Surface
-	speed   float32
+	rect          *sdl.Rect
+	pixel         uint32
+	rb            *objs.RigidBody
+	surface       *sdl.Surface
+	speed         float32
+	dampenGravity bool
+	CanJump       bool
 }
 
 var colour = sdl.Color{R: 255, G: 0, B: 255, A: 255} // purple
@@ -25,6 +27,8 @@ func NewPlayer(name string, initPos util.Vec2[float32], speed float32, gameObjec
 		BaseGameObject: core.NewBaseGameObject(core.PLAYER_LAYER, name, initPos, gameObjectStore),
 		rb:             rb,
 		speed:          speed,
+		dampenGravity:  false,
+		CanJump:        true,
 	}
 }
 
@@ -48,29 +52,31 @@ func (player *Player) UpdatePos(distX float32, distY float32) {
 }
 
 func (player *Player) OnUpdate(dt uint64, surface *sdl.Surface) {
-	systems.ApplyGravity(dt, player.rb)
+	var multiplier float32 = 1.2
+	if player.dampenGravity {
+		multiplier = 0.8
+	}
+	systems.ApplyGravity(dt, player.rb, multiplier)
 }
 
 func (player *Player) OnInput(event sdl.Event) {
 	switch t := event.(type) {
 	case *sdl.KeyboardEvent:
 		if t.State == sdl.PRESSED {
-			if t.Keysym.Sym == sdl.K_LEFT {
+			if t.Keysym.Sym == sdl.K_a {
 				player.rb.Velocity.X = -1 * player.speed
-			} else if t.Keysym.Sym == sdl.K_RIGHT {
+			} else if t.Keysym.Sym == sdl.K_d {
 				player.rb.Velocity.X = 1 * player.speed
 			}
-			if t.Keysym.Sym == sdl.K_UP {
-				player.rb.Velocity.Y = -1 * player.speed
-			} else if t.Keysym.Sym == sdl.K_DOWN {
-				player.rb.Velocity.Y = 1 * player.speed
+			if t.Keysym.Sym == sdl.K_SPACE && player.CanJump {
+				player.jump()
 			}
 		} else if t.State == sdl.RELEASED {
-			if (t.Keysym.Sym == sdl.K_LEFT && player.rb.Velocity.X < 0) || (t.Keysym.Sym == sdl.K_RIGHT && player.rb.Velocity.X > 0) {
+			if (t.Keysym.Sym == sdl.K_a && player.rb.Velocity.X < 0) || (t.Keysym.Sym == sdl.K_d && player.rb.Velocity.X > 0) {
 				player.rb.Velocity.X = 0
 			}
-			if (t.Keysym.Sym == sdl.K_UP && player.rb.Velocity.Y < 0) || (t.Keysym.Sym == sdl.K_DOWN && player.rb.Velocity.Y > 0) {
-				player.rb.Velocity.Y = 0
+			if t.Keysym.Sym == sdl.K_SPACE {
+				player.dampenGravity = false
 			}
 		}
 		break
@@ -80,4 +86,11 @@ func (player *Player) OnInput(event sdl.Event) {
 func (player *Player) AddChild(child core.GameObject) {
 	player.BaseGameObject.AddChild(child)
 	child.SetParent(player)
+}
+
+func (player *Player) jump() {
+	player.rb.Velocity.Y = -1 * player.speed * 8
+	player.dampenGravity = true
+	player.CanJump = false
+
 }
