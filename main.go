@@ -61,11 +61,21 @@ func main() {
 
 	var wallWidth int32 = 300
 	var wallHeight int32 = 32
-	wall := objs.NewWall("wall_1", util.Vec2[float32]{X: 0, Y: 500}, &game, wallWidth, wallHeight)
+	floor := objs.NewSolid("floor_1", util.Vec2[float32]{X: 0, Y: 500}, &game, wallWidth, wallHeight)
+	floor.AddChild(collision.NewCollider(
+		core.WALL_LAYER,
+		"floor_1_collider",
+		quadtree.Rect{X: 0, Y: 0, W: wallWidth, H: wallHeight},
+		&collisionSys,
+		&collisionSys,
+		make([]func(els []quadtree.QuadElement), 0),
+		&game,
+	))
+	wall := objs.NewSolid("wall_1", util.Vec2[float32]{X: 300, Y: 468}, &game, 32, 32)
 	wall.AddChild(collision.NewCollider(
 		core.WALL_LAYER,
 		"wall_1_collider",
-		quadtree.Rect{X: 0, Y: 0, W: wallWidth, H: wallHeight},
+		quadtree.Rect{X: 0, Y: 0, W: 32, H: 32},
 		&collisionSys,
 		&collisionSys,
 		make([]func(els []quadtree.QuadElement), 0),
@@ -73,6 +83,7 @@ func main() {
 	))
 
 	game.AddGameObject(&player)
+	game.AddGameObject(&floor)
 	game.AddGameObject(&wall)
 	game.Init()
 }

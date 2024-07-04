@@ -15,7 +15,7 @@ type Solid struct {
 
 var colour = sdl.Color{R: 128, G: 128, B: 128, A: 255}
 
-func NewWall(name string, initPos util.Vec2[float32], gameObjectStore core.GameObjectStore, width int32, height int32) Solid {
+func NewSolid(name string, initPos util.Vec2[float32], gameObjectStore core.GameObjectStore, width int32, height int32) Solid {
 	return Solid{
 		BaseGameObject: core.NewBaseGameObject(core.WALL_LAYER, name, initPos, gameObjectStore),
 		rect:           &sdl.Rect{X: int32(initPos.X), Y: int32(initPos.Y), W: width, H: height},
