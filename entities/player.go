@@ -28,7 +28,7 @@ func NewPlayer(name string, initPos util.Vec2[float32], speed float32, gameObjec
 		rb:             rb,
 		speed:          speed,
 		dampenGravity:  false,
-		CanJump:        true,
+		CanJump:        false,
 	}
 }
 
@@ -56,7 +56,9 @@ func (player *Player) OnUpdate(dt uint64, surface *sdl.Surface) {
 	if player.dampenGravity {
 		multiplier = 0.8
 	}
-	systems.ApplyGravity(dt, player.rb, multiplier)
+	if !player.CanJump {
+		systems.ApplyGravity(dt, player.rb, multiplier)
+	}
 }
 
 func (player *Player) OnInput(event sdl.Event) {

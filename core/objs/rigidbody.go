@@ -64,10 +64,12 @@ func (rb *RigidBody) detectCollision(distX float32, distY float32) {
 
 func (rb *RigidBody) moveOnRestriction(distX float32, distY float32) {
 	if rb.restriction == 0 {
+		rb.Velocity.X = 0
 		rb.Parent().UpdatePos(0, distY)
 	}
 
 	if rb.restriction == 1 {
+		rb.Velocity.Y = 0
 		rb.Parent().UpdatePos(distX, 0)
 	}
 
