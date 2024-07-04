@@ -10,11 +10,15 @@ import (
 	"github.com/TheRaizer/GolangGame/display"
 	"github.com/TheRaizer/GolangGame/entities"
 	"github.com/TheRaizer/GolangGame/util"
+	spriteImage "github.com/TheRaizer/GolangGame/util/image"
+
 	"github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 )
 
 // TODO: refactor this into separate files
 func main() {
+	spriteImage.DecodeImage("assets/adventurer-sheet.png")
+
 	globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	collisionSys := collision.NewCollisionSystem(globalRect)
 
@@ -43,6 +47,11 @@ func main() {
 		&collisionSys,
 		[]func(els []quadtree.QuadElement){
 			func(els []quadtree.QuadElement) {
+				if len(els) <= 1 {
+					player.CanJump = false
+					return
+				}
+
 				for _, el := range els {
 					obj := game.GetGameObject(el.Id)
 					// if colliding with something not the player, then allow a jump
