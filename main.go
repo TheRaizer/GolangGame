@@ -10,14 +10,13 @@ import (
 	"github.com/TheRaizer/GolangGame/display"
 	"github.com/TheRaizer/GolangGame/entities"
 	"github.com/TheRaizer/GolangGame/util"
-	spriteImage "github.com/TheRaizer/GolangGame/util/image"
-
 	"github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
+	spriteImage "github.com/TheRaizer/GolangGame/util/image"
 )
 
 // TODO: refactor this into separate files
 func main() {
-	spriteImage.DecodeImage("assets/adventurer-sheet.png")
+	spriteImage.DecodePNG("assets/adventurer-sheet.png")
 
 	globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	collisionSys := collision.NewCollisionSystem(globalRect)
