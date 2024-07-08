@@ -11,6 +11,31 @@ import (
 	"github.com/TheRaizer/GolangGame/util"
 )
 
+type IHDRChunk struct {
+	width  uint32 // width of PNG
+	height uint32 // height of PNG
+
+	// Bit depth is a single-byte integer giving the number of bits per sample or per palette index (not per pixel)
+	// Valid values are 1, 2, 4, 8, and 16, although not all values are allowed for all color types.
+	bitDepth uint8
+
+	// Color type codes represent sums of the following values: 1 (palette used), 2 (color used), and 4 (alpha channel used).
+	// Valid values are 0, 2, 3, 4, and 6.
+	colorType uint8
+
+	// Indicates the method used to compress the image data.
+	// At present, only compression method 0 (deflate/inflate compression with a sliding window of at most 32768 bytes) is defined.
+	compressionMethod uint8
+
+	// Indicates the preprocessing method applied to the image data before compression.
+	// At present, only filter method 0 (adaptive filtering with five basic filter types) is defined
+	filterMethod uint8
+
+	// Indicates the transmission order of the image data
+	// Two values are currently defined: 0 (no interlace) or 1 (Adam7 interlace).
+	interlaceMethod uint8
+}
+
 // NOTE: first 8 bytes are an identifier for png
 // now chunks start, first chunk is IHDR chunk
 // next 4 bytes represents the chunk length
@@ -46,7 +71,6 @@ func DecodePNG(name string) {
 
 	// skip the header bytes
 	var i int64 = 8
-
 	for {
 		header := make([]byte, 8)
 		_, err := file.ReadAt(header, i)
@@ -60,8 +84,8 @@ func DecodePNG(name string) {
 		chunkType := string(typeBuf)
 		i += 8
 
-		dataBuffer := make([]byte, dataLength)
-		_, err = file.ReadAt(dataBuffer, i)
+		dataBuf := make([]byte, dataLength)
+		_, err = file.ReadAt(dataBuf, i)
 
 		if isEOF(err) {
 			break
@@ -69,7 +93,8 @@ func DecodePNG(name string) {
 
 		switch strings.ToUpper(chunkType) {
 		case "IHDR":
-			decodeIHDRChunk(dataBuffer)
+			ihdrChunk := decodeIHDRChunk(dataBuf)
+			fmt.Println(ihdrChunk)
 		case "IDAT":
 
 		case "IEND":
@@ -83,11 +108,22 @@ func DecodePNG(name string) {
 
 		i += int64(dataLength)
 
-		// TODO: check CRC
+		crcBuf := make([]byte, 4)
+		_, err = file.ReadAt(crcBuf, i)
+		checkCRC(typeBuf, dataBuf, crcBuf)
 
 		i += 4
-
 	}
+}
+
+func checkCRC(typeBuf []byte, dataBuf []byte, crcBuf []byte) {
+	var crcInput []byte = util.ConcatSlices(typeBuf, dataBuf)
+	crc := Crc32(crcInput)
+
+	if crc != convertBytesToUint[uint32](crcBuf) {
+		panic("CRC's did not match in a chunk")
+	}
+
 }
 
 func isEOF(err error) bool {
@@ -102,15 +138,22 @@ func isEOF(err error) bool {
 
 // decode the IHDR chunk into its separate data per
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html
-func decodeIHDRChunk(chunk []byte) {
+func decodeIHDRChunk(chunk []byte) IHDRChunk {
 	if len(chunk) != 13 {
 		panic("IHDR chunk length must be 13")
 	}
 
 	width := convertBytesToUint[uint32](chunk[0:4])
 	height := convertBytesToUint[uint32](chunk[4:8])
-	fmt.Println(width)
-	fmt.Println(height)
+
+	return IHDRChunk{
+		width:             width,
+		height:            height,
+		bitDepth:          chunk[9],
+		colorType:         chunk[10],
+		compressionMethod: chunk[11],
+		interlaceMethod:   chunk[12],
+	}
 }
 
 // checks the 8 byte header and ensures that they match the PNG specification id
