@@ -11,31 +11,6 @@ import (
 	"github.com/TheRaizer/GolangGame/util"
 )
 
-type IHDRChunk struct {
-	width  uint32 // width of PNG
-	height uint32 // height of PNG
-
-	// Bit depth is a single-byte integer giving the number of bits per sample or per palette index (not per pixel)
-	// Valid values are 1, 2, 4, 8, and 16, although not all values are allowed for all color types.
-	bitDepth uint8
-
-	// Color type codes represent sums of the following values: 1 (palette used), 2 (color used), and 4 (alpha channel used).
-	// Valid values are 0, 2, 3, 4, and 6.
-	colorType uint8
-
-	// Indicates the method used to compress the image data.
-	// At present, only compression method 0 (deflate/inflate compression with a sliding window of at most 32768 bytes) is defined.
-	compressionMethod uint8
-
-	// Indicates the preprocessing method applied to the image data before compression.
-	// At present, only filter method 0 (adaptive filtering with five basic filter types) is defined
-	filterMethod uint8
-
-	// Indicates the transmission order of the image data
-	// Two values are currently defined: 0 (no interlace) or 1 (Adam7 interlace).
-	interlaceMethod uint8
-}
-
 // NOTE: first 8 bytes are an identifier for png
 // now chunks start, first chunk is IHDR chunk
 // next 4 bytes represents the chunk length
@@ -146,14 +121,7 @@ func decodeIHDRChunk(chunk []byte) IHDRChunk {
 	width := convertBytesToUint[uint32](chunk[0:4])
 	height := convertBytesToUint[uint32](chunk[4:8])
 
-	return IHDRChunk{
-		width:             width,
-		height:            height,
-		bitDepth:          chunk[9],
-		colorType:         chunk[10],
-		compressionMethod: chunk[11],
-		interlaceMethod:   chunk[12],
-	}
+	return NewIHDRChunk(width, height, chunk[8], chunk[9], chunk[10], chunk[11], chunk[12])
 }
 
 // checks the 8 byte header and ensures that they match the PNG specification id
