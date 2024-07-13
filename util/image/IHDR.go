@@ -1,6 +1,8 @@
 package image
 
-type IHDRChunk struct {
+import "fmt"
+
+type IHDR struct {
 	width  uint32 // width of PNG
 	height uint32 // height of PNG
 
@@ -25,7 +27,7 @@ type IHDRChunk struct {
 	interlaceMethod uint8
 }
 
-func NewIHDRChunk(
+func NewIHDR(
 	width uint32,
 	height uint32,
 	bitDepth uint8,
@@ -33,7 +35,7 @@ func NewIHDRChunk(
 	compressionMethod uint8,
 	filterMethod uint8,
 	interlaceMethod uint8,
-) IHDRChunk {
+) IHDR {
 	if compressionMethod != 0 {
 		panic("unsupported compression method " + string(compressionMethod) + " was found!")
 	}
@@ -41,7 +43,14 @@ func NewIHDRChunk(
 		panic("unsupported filter method " + string(filterMethod) + " was found!")
 	}
 
-	return IHDRChunk{
+	err := checkColorType(colorType)
+	err = checkBitDepth(bitDepth, colorType)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return IHDR{
 		width,
 		height,
 		bitDepth,
@@ -50,5 +59,39 @@ func NewIHDRChunk(
 		filterMethod,
 		interlaceMethod,
 	}
+}
 
+func checkColorType(colorType uint8) error {
+	if colorType != 0 && colorType != 2 && colorType != 3 && colorType != 4 && colorType != 6 {
+		return fmt.Errorf(
+			"Color type %d is an invalid integer. Must be: 0, 2, 3, 4, or 6",
+			colorType,
+		)
+	}
+	return nil
+}
+
+func checkBitDepth(bitDepth, colorType uint8) error {
+	if bitDepth != 1 && bitDepth%2 != 0 {
+		return fmt.Errorf(
+			"Bit depth %d is an invalid integer. Must be: 1, 2, 4, 8, or 16",
+			bitDepth,
+		)
+	}
+
+	if (colorType == 4 || colorType == 6 || colorType == 2) && (bitDepth != 8 && bitDepth != 16) {
+		return fmt.Errorf(
+			"Color type 2, with invalid bit depth: %d. Must be: 8 or 16",
+			bitDepth,
+		)
+	}
+
+	if colorType == 3 && (bitDepth != 1 && bitDepth != 2 && bitDepth != 4 && bitDepth != 8) {
+		return fmt.Errorf(
+			"Color type 3, with invalid bit depth: %d. Must be: 1, 2, 4 or 8",
+			bitDepth,
+		)
+	}
+
+	return nil
 }

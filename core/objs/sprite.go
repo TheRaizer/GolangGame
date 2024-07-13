@@ -21,6 +21,8 @@ func NewSprite(name string, initPos util.Vec2[float32], gameObjectStore core.Gam
 }
 
 func (sprite *Sprite) OnInit(surface *sdl.Surface) {
+	// TODO: using decoded RGB data, map to pixels
+	// sdl.CreateRGBSurfaceFrom()
 }
 
 func (sprite *Sprite) OnUpdate(dt uint64, surface *sdl.Surface) {
