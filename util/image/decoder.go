@@ -109,7 +109,14 @@ func DecodePNG(name string) {
 		i += 4
 	}
 
-	processIDAT(*png.ihdr, cmpltIdat)
+	scanlines, err := processIDAT(*png.ihdr, cmpltIdat)
+	util.CheckErr(err)
+
+	switch png.ihdr.colorType {
+	case 3:
+		colorMatrix := getColorIndices(scanlines, png.ihdr.bitDepth)
+		fmt.Println(colorMatrix)
+	}
 }
 
 func checkCRC(typeBuf []byte, dataBuf []byte, crcBuf []byte) {
@@ -167,7 +174,7 @@ func parsePLTE(data []byte) (*PLTE, error) {
 }
 
 // Processes the complete IDAT data into a list of scanlines.
-// returns error if any error occurs during processing.
+// Returns the list of scanlines or error if any error occurs during processing.
 func processIDAT(ihdr IHDR, data []byte) ([][]byte, error) {
 	bReader := bytes.NewReader(data)
 	z, err := zlib.NewReader(bReader)
@@ -187,7 +194,7 @@ func processIDAT(ihdr IHDR, data []byte) ([][]byte, error) {
 		return nil, err
 	}
 
-	scanlines, err := defilterPixelData(buf, ihdr.width, bpp)
+	scanlines, err := defilterPixelData(buf, ihdr.width, ihdr.height, bpp)
 	if err != nil {
 		return nil, err
 	}
@@ -195,32 +202,100 @@ func processIDAT(ihdr IHDR, data []byte) ([][]byte, error) {
 	return scanlines, nil
 }
 
+func getPrevScanline(scanlines [][]byte, i int) []byte {
+	var prevScanline []byte = nil
+	if i > 0 {
+		prevScanline = scanlines[i-1]
+		return prevScanline
+	}
+	return nil
+}
+
+// When color type is 3 this will get the value of each index.
+// Returns a 2D array of palette indices
+func getColorIndices(rawScanlines [][]byte, bitDepth uint8) [][]uint8 {
+	var paletteIndices [][]uint8 = make([][]uint8, len(rawScanlines))
+	for r := 0; r < len(rawScanlines); r++ {
+		scanline := rawScanlines[r]
+		paletteIndices[r] = make([]uint8, len(scanline))
+		j := 0 // tracks the byte we are evaluating
+		c := 0 // the column of the image we are on
+		for j < len(scanline) {
+			if bitDepth < 8 {
+				b := scanline[j]
+				bytes, err := splitByte(b, int(bitDepth))
+				util.CheckErr(err)
+
+				for _, splitByte := range bytes {
+					paletteIndices[r][c] = uint8(splitByte)
+				}
+				j++
+			} else {
+				bytes := scanline[j : j+int(bitDepth/8)]
+				paletteIndices[r][c] = uint8(convertBytesToUint[uint32](bytes))
+
+				j += int(bitDepth)
+			}
+			c++
+		}
+
+	}
+
+	return paletteIndices
+}
+
+// Splits a given byte into n different sub-bytes aligned to the LSB.
+// Returns the sub-bytes in order from MSB to LSB of the initial byte.
+func splitByte(b byte, n int) ([]byte, error) {
+	if n < 1 || n > 8 {
+		return nil, fmt.Errorf("Bit depth %d must be from 1-8", n)
+	}
+
+	if n != 1 && n%2 != 0 {
+		return nil, fmt.Errorf("Bit depth %d must be divisible by 2", n)
+	}
+
+	bytes := make([]byte, int(8/n))
+	mask := byte((1 << n) - 1)
+
+	for i := len(bytes) - 1; i >= 0; i-- {
+		// right shift as to align each split byte to the LSB
+		// eg. 00100101 with n=4 -> splits to 00000010 and 00000101
+		bytes[i] = (b & mask) >> (n * (len(bytes) - 1 - i))
+		mask = mask << n
+	}
+
+	return bytes, nil
+}
+
 // Defilters each scanline according to their specified filter, and returns a 2D slice of the defiltered (raw)
 // scanlines with the filter type ommited.
-func defilterPixelData(decompressedData []byte, width uint32, bpp float32) ([][]byte, error) {
+func defilterPixelData(decompressedData []byte, width uint32, height uint32, bpp float32) ([][]byte, error) {
 	// one stride corresponds to the length of one scanline excluding filter byte (one row of the image)
 	stride := int(float32(width) * bpp)
 
-	rawScanlines := make([][]byte, int(len(decompressedData)/int(stride+1)))
+	rawScanlines := make([][]byte, height)
 
 	offset := 0 // points to the filter byte of the scanline
 	i := 0
+	bppRounded := int(math.Ceil(float64(bpp)))
 
 	for i < len(rawScanlines) {
 		filterType := uint8(decompressedData[0])
 		filteredScanline := decompressedData[offset+1 : offset+1+stride]
-		fmt.Println(filterType)
 
 		switch filterType {
 		case 0: // None
 			rawScanlines[i] = filteredScanline
 		case 1: // Sub
-			bppRounded := int(math.Ceil(float64(bpp)))
 			rawScanlines[i] = inverseSub(filteredScanline, bppRounded)
 		// TODO: implement
 		case 2: // Up
+			rawScanlines[i] = inverseUp(filteredScanline, getPrevScanline(rawScanlines, i))
 		case 3: // Average
+			rawScanlines[i] = inverseAverage(filteredScanline, getPrevScanline(rawScanlines, i), bppRounded)
 		case 4: // Paeth
+			rawScanlines[i] = inversePaeth(filteredScanline, getPrevScanline(rawScanlines, i), bppRounded)
 		}
 		offset += 1 + stride
 		i += 1
@@ -233,20 +308,86 @@ func defilterPixelData(decompressedData []byte, width uint32, bpp float32) ([][]
 	return rawScanlines, nil
 }
 
+// INVERSE FILTERS
+// http://www.libpng.org/pub/png/spec/1.2/PNG-Filters.html
+
 // The inverse of the sub filter, which defilters a scanline that was filtered by the sub algorithm.
-// bpp is the bytes per pixel rounded up to 1 as per the docs.
-// filteredScanline is the sub filtered scanline ommiting the filter type byte.
-// http://www.libpng.org/pub/png/spec/1.2/PNG-Filters.html#Filter-type-1-Sub
+// Returns the defiltered (raw) scanline
 func inverseSub(filteredScanline []byte, bpp int) []byte {
 	rawScanline := make([]byte, len(filteredScanline))
-	for i, x := range filteredScanline {
+	for i := 0; i < len(filteredScanline); i++ {
 		if i < bpp {
-			rawScanline[i] = x
+			rawScanline[i] = filteredScanline[i]
 		} else {
-			rawScanline[i] = filteredScanline[i] + rawScanline[i-bpp] // NOTE: the docs say this mod 256 to stop overflow?
+			rawScanline[i] = (filteredScanline[i] + rawScanline[i-bpp]) & 0xFF // & 0xFF == % 256 for unsigned integers
 		}
 	}
 	return rawScanline
+}
+
+// The inverse of the up filter, which defilters a scanline that was filtered by the up algorithm.
+// Returns the defiltered (raw) scanline
+func inverseUp(filteredScanline []byte, rawPrevScanline []byte) []byte {
+	rawScanline := make([]byte, len(filteredScanline))
+	for i, x := range filteredScanline {
+		if rawPrevScanline == nil {
+			rawScanline[i] = x
+		} else {
+			rawScanline[i] = (filteredScanline[i] + rawPrevScanline[i]) & 0xFF
+		}
+	}
+	return rawScanline
+}
+
+// The inverse of the average filter, which defilters a scanline that was filtered by the average algorithm.
+// Returns the defiltered (raw) scanline
+func inverseAverage(filteredScanline []byte, rawPrevScanline []byte, bpp int) []byte {
+	rawScanline := make([]byte, len(filteredScanline))
+	for i := 0; i < len(filteredScanline); i++ {
+		if i < bpp {
+			// will run at least once when i = 0
+			rawScanline[i] = filteredScanline[i]
+		} else {
+			// other case will have run when i = 0, we can be sure rawPrevScanline != nil by this point
+			floored := byte(math.Floor(float64(rawScanline[i-bpp] + rawPrevScanline[i])))
+			rawScanline[i] = (filteredScanline[i] + floored) & 0xFF
+		}
+	}
+	return rawScanline
+}
+
+// The inverse of the Paeth filter, which defilters a scanline that was filtered by the Paeth algorithm.
+// Returns the defiltered (raw) scanline
+func inversePaeth(filteredScanline []byte, rawPrevScanline []byte, bpp int) []byte {
+	rawScanline := make([]byte, len(filteredScanline))
+	for i := 0; i < len(filteredScanline); i++ {
+		if i < bpp {
+			rawScanline[i] = filteredScanline[i]
+		} else {
+			paethPrediction := paethPredictor(rawScanline[i-bpp], rawPrevScanline[i], rawPrevScanline[i-1])
+			rawScanline[i] = (filteredScanline[i] + paethPrediction) & 0xFF
+		}
+	}
+	return rawScanline
+}
+
+// Predict the value of a pixel based on the values of neighbouring pixels.
+// left is the pixel to the left of the current
+// up is the pixel above the current
+// upLeft is the pixel to the upper left of the current
+func paethPredictor(left, up, upLeft byte) byte {
+	p := left + up - upLeft
+	pLeftDist := math.Abs(float64(p - left))
+	pUpDist := math.Abs(float64(p - up))
+	pUpLeftDist := math.Abs(float64(p - upLeft))
+
+	if pLeftDist <= pUpDist && pLeftDist <= pUpLeftDist {
+		return left
+	} else if pLeftDist <= pUpLeftDist {
+		return up
+	} else {
+		return upLeft
+	}
 }
 
 // Returns the number of bytes per pixel of a PNG (NOT including the filter byte).

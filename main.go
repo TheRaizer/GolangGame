@@ -16,7 +16,7 @@ import (
 
 // TODO: refactor this into separate files
 func main() {
-	spriteImage.DecodePNG("assets/adventurer-sheet.png")
+	spriteImage.DecodePNG("assets/characters.png")
 
 	// globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	// collisionSys := collision.NewCollisionSystem(globalRect)
