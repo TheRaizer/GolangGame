@@ -7,7 +7,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/TheRaizer/GolangGame/util"
@@ -93,7 +92,8 @@ func DecodePNG(name string) PNG {
 			if png.PLTE == nil && png.IHDR.colorType == 3 {
 				panic("PLTE chunk should have been encountered before IDAT chunk")
 			}
-			cmpltIdat = slices.Concat(cmpltIdat, dataBuf) // TODO: is there a faster method then concatenating
+
+			cmpltIdat = append(cmpltIdat, dataBuf...)
 		case "IEND":
 		default:
 			// check if the 5th bit (from LSB to MSB i.e. right to left) of the first byte is 1
@@ -112,11 +112,16 @@ func DecodePNG(name string) PNG {
 		i += 4
 	}
 
+	fmt.Println("Finished compiling chunks")
+
 	rawScanlines, err := processIDAT(*png.IHDR, cmpltIdat)
 	util.CheckErr(err)
 
+	fmt.Println("Finished processing IDAT chunks")
+
 	var pixels []uint32 = nil
 
+	// TODO: optimize this
 	if png.bitDepth <= 8 {
 		pixelDataMatrix := getPixelDataMatrix[uint8](rawScanlines, png.bitDepth)
 		pixels, err = convertPixelDataMatrix(pixelDataMatrix, png)
@@ -124,8 +129,8 @@ func DecodePNG(name string) PNG {
 	} else {
 		pixelDataMatrix := getPixelDataMatrix[uint16](rawScanlines, png.bitDepth)
 		pixels, err = convertPixelDataMatrix(pixelDataMatrix, png)
-
 	}
+	fmt.Println("Finished compiling pixels")
 	util.CheckErr(err)
 	png.Data = &pixels
 
@@ -227,7 +232,7 @@ func paletteIndicesToRgba[T uint8 | uint16](idx T, palette [][3]byte) uint32 {
 }
 
 func checkCRC(typeBuf []byte, dataBuf []byte, crcBuf []byte) {
-	var crcInput []byte = slices.Concat(typeBuf, dataBuf)
+	var crcInput []byte = append(typeBuf, dataBuf...)
 	crc := Crc32(crcInput)
 
 	if crc != convertBytesToUint[uint32](crcBuf) {
