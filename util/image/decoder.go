@@ -13,6 +13,7 @@ import (
 	"github.com/TheRaizer/GolangGame/util"
 )
 
+// TODO: perhaps make this async using goroutines?
 // Decodes a PNG file into a slice of RGBA values
 // If PNG uses 16 bit depth RGB(A) then it is downscaled to 8 bit depth RGB(A)
 func DecodePNG(name string) PNG {
@@ -74,7 +75,7 @@ func DecodePNG(name string) PNG {
 			ihdrChunk, err := decodeIHDR(dataBuf)
 			util.CheckErr(err)
 			png.IHDR = ihdrChunk
-			fmt.Println(ihdrChunk)
+			fmt.Printf("%+v \n", *ihdrChunk)
 		case "PLTE":
 			if png.IHDR.colorType == 0 || png.IHDR.colorType == 4 {
 				panic("PLTE chunk must not occur when color type 0 or 4")
@@ -82,7 +83,7 @@ func DecodePNG(name string) PNG {
 			plteChunk, err := parsePLTE(dataBuf)
 			util.CheckErr(err)
 			png.PLTE = plteChunk
-			fmt.Println(plteChunk)
+			fmt.Printf("%+v \n", *plteChunk)
 		case "IDAT":
 			// ihdr chunk must have been read
 			if png.IHDR == nil {
@@ -114,8 +115,17 @@ func DecodePNG(name string) PNG {
 	rawScanlines, err := processIDAT(*png.IHDR, cmpltIdat)
 	util.CheckErr(err)
 
-	pixelDataMatrix := getPixelDataMatrix(rawScanlines, png.bitDepth)
-	pixels, err := convertPixelDataMatrix(pixelDataMatrix, png)
+	var pixels []uint32 = nil
+
+	if png.bitDepth <= 8 {
+		pixelDataMatrix := getPixelDataMatrix[uint8](rawScanlines, png.bitDepth)
+		pixels, err = convertPixelDataMatrix(pixelDataMatrix, png)
+
+	} else {
+		pixelDataMatrix := getPixelDataMatrix[uint16](rawScanlines, png.bitDepth)
+		pixels, err = convertPixelDataMatrix(pixelDataMatrix, png)
+
+	}
 	util.CheckErr(err)
 	png.Data = &pixels
 
@@ -127,7 +137,7 @@ func DecodePNG(name string) PNG {
 // No current support for 16 bit depth
 // NOTE: this would require storing a uint64 of 4 uint16's representing R, G, B, and A
 // If 16 bit is given, it is downscaled to 8 bit RGB
-func convertPixelDataMatrix(pixelDataMatrix [][]uint16, png PNG) ([]uint32, error) {
+func convertPixelDataMatrix[T uint8 | uint16](pixelDataMatrix [][]T, png PNG) ([]uint32, error) {
 	pixels := make([]uint32, png.Width*png.Height)
 
 	i := 0
@@ -135,26 +145,52 @@ func convertPixelDataMatrix(pixelDataMatrix [][]uint16, png PNG) ([]uint32, erro
 		row := pixelDataMatrix[r]
 		c := 0
 		for c < len(row) {
-			pixelData := row[c]
 			switch png.colorType {
 			case 0:
+				pixelData := row[c]
 				pixels[i] = grayscaleToRgba(pixelData, png.bitDepth, 255)
 				c++
 			case 2:
-				// TODO: every 3 pixelData's represents RGB of a single pixel
+				// every 3 pixelData's represents RGB of a single pixel
+				pixels[i] = packBytesToUint32(
+					[4]byte{
+						rescaleToByte(png.bitDepth, row[c]),
+						rescaleToByte(png.bitDepth, row[c+1]),
+						rescaleToByte(png.bitDepth, row[c+2]),
+						255,
+					},
+				)
 				c += 3 // 3 channels
 			case 3:
 				if png.PLTE == nil {
 					return nil, fmt.Errorf("Should have PLTE chunk with color type 3")
 				}
+				pixelData := row[c]
 				pixels[i] = paletteIndicesToRgba(pixelData, png.palette)
 				c++
 			case 4:
-				// TODO: every 2 pixelData's represents gray scale and alpha of a single pixel
+				// every 2 pixelData's represents gray scale and alpha of a single pixel
+				pixel8 := rescaleToByte(png.bitDepth, row[c])
+				pixels[i] = packBytesToUint32(
+					[4]byte{
+						pixel8,
+						pixel8,
+						pixel8,
+						rescaleToByte(png.bitDepth, row[c+1]),
+					},
+				)
 				c += 2 // 2 channels
 
 			case 6:
-				// TODO: every 4 pixelData's represents 3 RGB channels and an alpha channel
+				// every 4 pixelData's represents 3 RGB channels and an alpha channel
+				pixels[i] = packBytesToUint32(
+					[4]byte{
+						rescaleToByte(png.bitDepth, row[c]),
+						rescaleToByte(png.bitDepth, row[c+1]),
+						rescaleToByte(png.bitDepth, row[c+2]),
+						rescaleToByte(png.bitDepth, row[c+3]),
+					},
+				)
 				c += 4 // 4 channels
 			}
 			i++
@@ -169,16 +205,22 @@ func packBytesToUint32(bytes [4]byte) uint32 {
 	return (uint32(bytes[0]) << 24) + (uint32(bytes[1]) << 16) + (uint32(bytes[2]) << 8) + uint32(bytes[3])
 }
 
-func grayscaleToRgba(pixel uint16, bitDepth uint8, alpha uint8) uint32 {
-	maxGrayValue := math.Pow(2, float64(bitDepth)) - 1
-	normalizedPixel := float64(pixel) / maxGrayValue // get pixel between 0 and 1
-	pixel8 := byte(normalizedPixel * 255)            // get pixel between 0 and 255
-
+func grayscaleToRgba[T uint8 | uint16](pixel T, bitDepth uint8, alpha uint8) uint32 {
+	pixel8 := rescaleToByte(bitDepth, pixel)
 	rgbValue := packBytesToUint32([4]byte{pixel8, pixel8, pixel8, alpha})
 	return rgbValue
 }
 
-func paletteIndicesToRgba(idx uint16, palette [][3]byte) uint32 {
+// compresses
+func rescaleToByte[T uint8 | uint16 | uint32 | uint64](bitDepth uint8, pixel T) byte {
+	maxValue := math.Pow(2, float64(bitDepth)) - 1
+	normalizedPixel := float64(pixel) / maxValue // get pixel between 0 and 1
+	pixel8 := byte(normalizedPixel * 255)        // get pixel between 0 and 255
+
+	return pixel8
+}
+
+func paletteIndicesToRgba[T uint8 | uint16](idx T, palette [][3]byte) uint32 {
 	rgb := palette[idx]
 	rgbValue := packBytesToUint32([4]byte{rgb[0], rgb[1], rgb[2], 255})
 	return rgbValue
@@ -276,12 +318,13 @@ func getPrevScanline(scanlines [][]byte, i int) []byte {
 	return nil
 }
 
-// Returns a matrix of the pixel values parsed from the given raw scanlines
-func getPixelDataMatrix(rawScanlines [][]byte, bitDepth uint8) [][]uint16 {
-	var pixelDatas [][]uint16 = make([][]uint16, len(rawScanlines)) // pixels have max 16 bit depth so uint16 is used
+// Returns a matrix of the pixel values parsed from the given raw scanlines.
+// T should be uint8 for bit depth leq to 8 and uint16 for bit depth == 16
+func getPixelDataMatrix[T uint8 | uint16](rawScanlines [][]byte, bitDepth uint8) [][]T {
+	var pixelDatas [][]T = make([][]T, len(rawScanlines)) // pixels have max 16 bit depth so uint16 is used
 	for r := 0; r < len(rawScanlines); r++ {
 		scanline := rawScanlines[r]
-		pixelDatas[r] = make([]uint16, len(scanline))
+		pixelDatas[r] = make([]T, len(scanline))
 		j := 0 // tracks the byte we are evaluating
 		c := 0 // the column of the image we are on
 		for j < len(scanline) {
@@ -291,18 +334,17 @@ func getPixelDataMatrix(rawScanlines [][]byte, bitDepth uint8) [][]uint16 {
 				util.CheckErr(err)
 
 				for _, splitByte := range bytes {
-					pixelDatas[r][c] = uint16(splitByte)
+					pixelDatas[r][c] = T(splitByte)
 				}
 				j++
 			} else {
 				bytes := scanline[j : j+int(bitDepth/8)]
-				pixelDatas[r][c] = convertBytesToUint[uint16](bytes)
+				pixelDatas[r][c] = convertBytesToUint[T](bytes)
 
-				j += int(bitDepth)
+				j += int(bitDepth / 8)
 			}
 			c++
 		}
-
 	}
 
 	return pixelDatas

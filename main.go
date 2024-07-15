@@ -21,7 +21,7 @@ import (
 
 // TODO: refactor this into separate files
 func main() {
-	png := image.DecodePNG("assets/characters.png")
+	png := image.DecodePNG("assets/img.png")
 
 	// globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	// collisionSys := collision.NewCollisionSystem(globalRect)
