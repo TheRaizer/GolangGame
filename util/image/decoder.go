@@ -122,6 +122,7 @@ func DecodePNG(name string) PNG {
 	pixels := getPixels(rawScanlines, png)
 	util.CheckErr(err)
 	png.Data = &pixels
+	fmt.Println("finished decoding")
 
 	return png
 }
@@ -314,7 +315,7 @@ func getPrevScanline(scanlines [][]byte, i int) []byte {
 
 // Returns a matrix of the pixel values parsed from the given raw scanlines.
 func getPixels(rawScanlines [][]byte, png PNG) []uint32 {
-	var pixels []uint32 = make([]uint32, png.Width) // pixels have max 16 bit depth so uint16 is used
+	var pixels []uint32
 	for _, scanline := range rawScanlines {
 		var scanlinePixels []uint32 = nil
 		if png.bitDepth < 8 {
@@ -331,7 +332,6 @@ func getPixels(rawScanlines [][]byte, png PNG) []uint32 {
 func fetchPixelsFromSubBytes(scanline []byte, png PNG) []uint32 {
 	// the number of split bytes per pixel is 8 / the bit depth
 	// in this function bit depth is expected to be 1, 2, or 4 so splitBpp is always a factor of 8
-	splitBpp := int(8 / png.bitDepth)
 	scanlinePixels := make([]uint32, png.Width)
 
 	c := 0
@@ -343,12 +343,12 @@ func fetchPixelsFromSubBytes(scanline []byte, png PNG) []uint32 {
 
 		j := 0 // tracks the byte we are evaluating
 		for j < len(bytes) {
-			pixel, err := getPixelData(png, bytes[j:j+splitBpp])
+			pixel, err := getPixelData(png, []byte{bytes[j]}) // when we split, each split byte has meaning
 			util.CheckErr(err)
 
 			scanlinePixels[c] = pixel
 			c++
-			j += splitBpp
+			j++
 		}
 	}
 
@@ -427,7 +427,7 @@ func getPixelData(png PNG, bytes []byte) (uint32, error) {
 			return 0, fmt.Errorf("Should have PLTE chunk with color type 3")
 		}
 		pixelData := bytes[0]
-		return paletteIndicesToRgba(pixelData, png.palette), nil
+		return paletteIndicesToRgba(uint8(pixelData), png.palette), nil
 	case 4:
 		// every 2 pixelData's represents gray scale and alpha of a single pixel
 		pixel8 := bytes[0]
