@@ -32,7 +32,7 @@ func NewPlayer(name string, initPos util.Vec2[float32], speed float32, gameObjec
 	}
 }
 
-func (player *Player) OnInit(surface *sdl.Surface) {
+func (player *Player) OnInit(surface *sdl.Surface, renderer *sdl.Renderer) {
 	player.surface = surface
 	player.rect = &sdl.Rect{X: int32(player.Pos.X), Y: int32(player.Pos.Y), W: 32, H: 32}
 

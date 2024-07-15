@@ -6,6 +6,7 @@ import (
 	"github.com/TheRaizer/GolangGame/core"
 	"github.com/TheRaizer/GolangGame/core/collision"
 	"github.com/TheRaizer/GolangGame/display"
+	"github.com/TheRaizer/GolangGame/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -34,20 +35,17 @@ func (game *Game) Init() {
 	}
 
 	window, err := sdl.CreateWindow(display.TITLE, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, display.WIDTH, display.HEIGHT, sdl.WINDOW_SHOWN)
-	if err != nil {
-		panic(err)
-	}
+	util.CheckErr(err)
 	game.window = window
 
 	surface, err := window.GetSurface()
-
-	if err != nil {
-		panic(err)
-	}
+	util.CheckErr(err)
 	game.surface = surface
+	renderer, err := window.GetRenderer()
+	util.CheckErr(err)
 
 	for _, gameObject := range game.gameObjects {
-		gameObject.OnInit(game.surface)
+		gameObject.OnInit(game.surface, renderer)
 	}
 
 	game.running = true

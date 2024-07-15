@@ -11,12 +11,17 @@ import (
 	// "github.com/TheRaizer/GolangGame/entities"
 	// "github.com/TheRaizer/GolangGame/util"
 	// "github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
-	spriteImage "github.com/TheRaizer/GolangGame/util/image"
+
+	"log"
+	"unsafe"
+
+	"github.com/TheRaizer/GolangGame/util/image"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 // TODO: refactor this into separate files
 func main() {
-	spriteImage.DecodePNG("assets/characters.png")
+	png := image.DecodePNG("assets/characters.png")
 
 	// globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	// collisionSys := collision.NewCollisionSystem(globalRect)
@@ -55,8 +60,7 @@ func main() {
 	// 				obj := game.GetGameObject(el.Id)
 	// 				// if colliding with something not the player, then allow a jump
 	// 				if obj.Layer() != core.PLAYER_LAYER && rb.Velocity.Y > 0 {
-	// 					player.CanJump = true
-	// 				}
+	// 					player.CanJump = true }
 	// 			}
 	// 		},
 	// 	},
@@ -94,4 +98,46 @@ func main() {
 	// game.AddGameObject(&floor)
 	// game.AddGameObject(&wall)
 	// game.Init()
+	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED,
+		sdl.WINDOWPOS_UNDEFINED, 800, 600, sdl.WINDOW_SHOWN)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer window.Destroy()
+
+	renderer, err := sdl.CreateRenderer(window, -1, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer renderer.Destroy()
+
+	texture, err := renderer.CreateTexture(sdl.PIXELFORMAT_RGBA8888,
+		sdl.TEXTUREACCESS_STATIC, int32(png.Width), int32(png.Height))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer texture.Destroy()
+
+	texture.Update(nil, unsafe.Pointer(&(*png.Data)[0]), int(png.Width)*4) // width * 4 channels
+
+L:
+	for {
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			if _, ok := event.(*sdl.QuitEvent); ok {
+				break L
+			}
+		}
+
+		//4 == sizeof(int32), unsafe.Sizeof(pixels) returns the actual size of
+		//the slice header which is 24
+		window.UpdateSurface()
+
+		renderer.Clear()
+		renderer.Copy(texture, nil, nil)
+		renderer.Present()
+	}
+
+	sdl.Delay(1000)
+	sdl.Quit()
 }

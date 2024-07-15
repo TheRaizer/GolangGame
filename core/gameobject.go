@@ -12,7 +12,7 @@ type GameObjectStore interface {
 }
 
 type GameObject interface {
-	OnInit(surface *sdl.Surface)
+	OnInit(surface *sdl.Surface, renderer *sdl.Renderer)
 	OnUpdate(dt uint64, surface *sdl.Surface)
 	OnInput(event sdl.Event)
 	ID() string
@@ -87,6 +87,6 @@ func (obj *BaseGameObject) Layer() int {
 	return obj.layer
 }
 
-func (obj *BaseGameObject) OnUpdate(dt uint64, surface *sdl.Surface) {}
-func (obj *BaseGameObject) OnInit(surface *sdl.Surface)              {}
-func (obj *BaseGameObject) OnInput(event sdl.Event)                  {}
+func (obj *BaseGameObject) OnUpdate(dt uint64, surface *sdl.Surface)            {}
+func (obj *BaseGameObject) OnInit(surface *sdl.Surface, renderer *sdl.Renderer) {}
+func (obj *BaseGameObject) OnInput(event sdl.Event)                             {}

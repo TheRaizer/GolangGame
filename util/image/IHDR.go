@@ -3,8 +3,8 @@ package image
 import "fmt"
 
 type IHDR struct {
-	width  uint32 // width of PNG
-	height uint32 // height of PNG
+	Width  uint32 // width of PNG
+	Height uint32 // height of PNG
 
 	// Bit depth is a single-byte integer giving the number of bits per sample or per palette index (not per pixel)
 	// Valid values are 1, 2, 4, 8, and 16, although not all values are allowed for all color types.

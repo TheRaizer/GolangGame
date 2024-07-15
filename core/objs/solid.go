@@ -22,7 +22,7 @@ func NewSolid(name string, initPos util.Vec2[float32], gameObjectStore core.Game
 	}
 }
 
-func (wall *Solid) OnInit(surface *sdl.Surface) {
+func (wall *Solid) OnInit(surface *sdl.Surface, _ *sdl.Renderer) {
 	wall.pixel = sdl.MapRGBA(surface.Format, colour.R, colour.G, colour.B, colour.A)
 	surface.FillRect(wall.rect, wall.pixel)
 }

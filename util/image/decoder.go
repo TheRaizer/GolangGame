@@ -13,7 +13,9 @@ import (
 	"github.com/TheRaizer/GolangGame/util"
 )
 
-func DecodePNG(name string) {
+// Decodes a PNG file into a slice of RGBA values
+// If PNG uses 16 bit depth RGB(A) then it is downscaled to 8 bit depth RGB(A)
+func DecodePNG(name string) PNG {
 	file, err := os.Open(name)
 
 	defer func() {
@@ -71,23 +73,23 @@ func DecodePNG(name string) {
 		case "IHDR":
 			ihdrChunk, err := decodeIHDR(dataBuf)
 			util.CheckErr(err)
-			png.ihdr = ihdrChunk
+			png.IHDR = ihdrChunk
 			fmt.Println(ihdrChunk)
 		case "PLTE":
-			if png.ihdr.colorType == 0 || png.ihdr.colorType == 4 {
+			if png.IHDR.colorType == 0 || png.IHDR.colorType == 4 {
 				panic("PLTE chunk must not occur when color type 0 or 4")
 			}
 			plteChunk, err := parsePLTE(dataBuf)
 			util.CheckErr(err)
-			png.plte = plteChunk
+			png.PLTE = plteChunk
 			fmt.Println(plteChunk)
 		case "IDAT":
 			// ihdr chunk must have been read
-			if png.ihdr == nil {
+			if png.IHDR == nil {
 				panic("IHDR chunk should have been encountered before IDAT chunk")
 			}
 			// PLTE must appear for color type 3
-			if png.plte == nil && png.ihdr.colorType == 3 {
+			if png.PLTE == nil && png.IHDR.colorType == 3 {
 				panic("PLTE chunk should have been encountered before IDAT chunk")
 			}
 			cmpltIdat = slices.Concat(cmpltIdat, dataBuf) // TODO: is there a faster method then concatenating
@@ -109,14 +111,77 @@ func DecodePNG(name string) {
 		i += 4
 	}
 
-	scanlines, err := processIDAT(*png.ihdr, cmpltIdat)
+	rawScanlines, err := processIDAT(*png.IHDR, cmpltIdat)
 	util.CheckErr(err)
 
-	switch png.ihdr.colorType {
-	case 3:
-		colorMatrix := getColorIndices(scanlines, png.ihdr.bitDepth)
-		fmt.Println(colorMatrix)
+	pixelDataMatrix := getPixelDataMatrix(rawScanlines, png.bitDepth)
+	pixels, err := convertPixelDataMatrix(pixelDataMatrix, png)
+	util.CheckErr(err)
+	png.Data = &pixels
+
+	return png
+}
+
+// Converts a pixel matrix into a slice of uint32 where each entry represents an RGBA pixel
+// uint32 contains 8 bytes per R, G, B, and A
+// No current support for 16 bit depth
+// NOTE: this would require storing a uint64 of 4 uint16's representing R, G, B, and A
+// If 16 bit is given, it is downscaled to 8 bit RGB
+func convertPixelDataMatrix(pixelDataMatrix [][]uint16, png PNG) ([]uint32, error) {
+	pixels := make([]uint32, png.Width*png.Height)
+
+	i := 0
+	for r := 0; r < len(pixelDataMatrix); r++ {
+		row := pixelDataMatrix[r]
+		c := 0
+		for c < len(row) {
+			pixelData := row[c]
+			switch png.colorType {
+			case 0:
+				pixels[i] = grayscaleToRgba(pixelData, png.bitDepth, 255)
+				c++
+			case 2:
+				// TODO: every 3 pixelData's represents RGB of a single pixel
+				c += 3 // 3 channels
+			case 3:
+				if png.PLTE == nil {
+					return nil, fmt.Errorf("Should have PLTE chunk with color type 3")
+				}
+				pixels[i] = paletteIndicesToRgba(pixelData, png.palette)
+				c++
+			case 4:
+				// TODO: every 2 pixelData's represents gray scale and alpha of a single pixel
+				c += 2 // 2 channels
+
+			case 6:
+				// TODO: every 4 pixelData's represents 3 RGB channels and an alpha channel
+				c += 4 // 4 channels
+			}
+			i++
+		}
 	}
+
+	return pixels, nil
+}
+
+func packBytesToUint32(bytes [4]byte) uint32 {
+	// combine the bytes into a single uint32 (opaque)
+	return (uint32(bytes[0]) << 24) + (uint32(bytes[1]) << 16) + (uint32(bytes[2]) << 8) + uint32(bytes[3])
+}
+
+func grayscaleToRgba(pixel uint16, bitDepth uint8, alpha uint8) uint32 {
+	maxGrayValue := math.Pow(2, float64(bitDepth)) - 1
+	normalizedPixel := float64(pixel) / maxGrayValue // get pixel between 0 and 1
+	pixel8 := byte(normalizedPixel * 255)            // get pixel between 0 and 255
+
+	rgbValue := packBytesToUint32([4]byte{pixel8, pixel8, pixel8, alpha})
+	return rgbValue
+}
+
+func paletteIndicesToRgba(idx uint16, palette [][3]byte) uint32 {
+	rgb := palette[idx]
+	rgbValue := packBytesToUint32([4]byte{rgb[0], rgb[1], rgb[2], 255})
+	return rgbValue
 }
 
 func checkCRC(typeBuf []byte, dataBuf []byte, crcBuf []byte) {
@@ -194,7 +259,7 @@ func processIDAT(ihdr IHDR, data []byte) ([][]byte, error) {
 		return nil, err
 	}
 
-	scanlines, err := defilterPixelData(buf, ihdr.width, ihdr.height, bpp)
+	scanlines, err := defilterPixelData(buf, ihdr.Width, ihdr.Height, bpp)
 	if err != nil {
 		return nil, err
 	}
@@ -211,13 +276,12 @@ func getPrevScanline(scanlines [][]byte, i int) []byte {
 	return nil
 }
 
-// When color type is 3 this will get the value of each index.
-// Returns a 2D array of palette indices
-func getColorIndices(rawScanlines [][]byte, bitDepth uint8) [][]uint8 {
-	var paletteIndices [][]uint8 = make([][]uint8, len(rawScanlines))
+// Returns a matrix of the pixel values parsed from the given raw scanlines
+func getPixelDataMatrix(rawScanlines [][]byte, bitDepth uint8) [][]uint16 {
+	var pixelDatas [][]uint16 = make([][]uint16, len(rawScanlines)) // pixels have max 16 bit depth so uint16 is used
 	for r := 0; r < len(rawScanlines); r++ {
 		scanline := rawScanlines[r]
-		paletteIndices[r] = make([]uint8, len(scanline))
+		pixelDatas[r] = make([]uint16, len(scanline))
 		j := 0 // tracks the byte we are evaluating
 		c := 0 // the column of the image we are on
 		for j < len(scanline) {
@@ -227,12 +291,12 @@ func getColorIndices(rawScanlines [][]byte, bitDepth uint8) [][]uint8 {
 				util.CheckErr(err)
 
 				for _, splitByte := range bytes {
-					paletteIndices[r][c] = uint8(splitByte)
+					pixelDatas[r][c] = uint16(splitByte)
 				}
 				j++
 			} else {
 				bytes := scanline[j : j+int(bitDepth/8)]
-				paletteIndices[r][c] = uint8(convertBytesToUint[uint32](bytes))
+				pixelDatas[r][c] = convertBytesToUint[uint16](bytes)
 
 				j += int(bitDepth)
 			}
@@ -241,7 +305,7 @@ func getColorIndices(rawScanlines [][]byte, bitDepth uint8) [][]uint8 {
 
 	}
 
-	return paletteIndices
+	return pixelDatas
 }
 
 // Splits a given byte into n different sub-bytes aligned to the LSB.
@@ -289,7 +353,6 @@ func defilterPixelData(decompressedData []byte, width uint32, height uint32, bpp
 			rawScanlines[i] = filteredScanline
 		case 1: // Sub
 			rawScanlines[i] = inverseSub(filteredScanline, bppRounded)
-		// TODO: implement
 		case 2: // Up
 			rawScanlines[i] = inverseUp(filteredScanline, getPrevScanline(rawScanlines, i))
 		case 3: // Average

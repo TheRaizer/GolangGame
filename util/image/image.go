@@ -1,6 +1,7 @@
 package image
 
 type PNG struct {
-	ihdr *IHDR
-	plte *PLTE
+	*IHDR
+	*PLTE
+	Data *[]uint32
 }
