@@ -119,18 +119,7 @@ func DecodePNG(name string) PNG {
 
 	fmt.Println("Finished processing IDAT chunks")
 
-	var pixels []uint32 = nil
-
-	// TODO: optimize this
-	if png.bitDepth <= 8 {
-		pixelDataMatrix := getPixelDataMatrix[uint8](rawScanlines, png.bitDepth)
-		pixels, err = convertPixelDataMatrix(pixelDataMatrix, png)
-
-	} else {
-		pixelDataMatrix := getPixelDataMatrix[uint16](rawScanlines, png.bitDepth)
-		pixels, err = convertPixelDataMatrix(pixelDataMatrix, png)
-	}
-	fmt.Println("Finished compiling pixels")
+	pixels := getPixels(rawScanlines, png)
 	util.CheckErr(err)
 	png.Data = &pixels
 
@@ -286,7 +275,7 @@ func parsePLTE(data []byte) (*PLTE, error) {
 }
 
 // Processes the complete IDAT data into a list of scanlines.
-// Returns the list of scanlines or error if any error occurs during processing.
+// Returns the list of raw scanlines or error if any error occurs during processing.
 func processIDAT(ihdr IHDR, data []byte) ([][]byte, error) {
 	bReader := bytes.NewReader(data)
 	z, err := zlib.NewReader(bReader)
@@ -324,35 +313,146 @@ func getPrevScanline(scanlines [][]byte, i int) []byte {
 }
 
 // Returns a matrix of the pixel values parsed from the given raw scanlines.
-// T should be uint8 for bit depth leq to 8 and uint16 for bit depth == 16
-func getPixelDataMatrix[T uint8 | uint16](rawScanlines [][]byte, bitDepth uint8) [][]T {
-	var pixelDatas [][]T = make([][]T, len(rawScanlines)) // pixels have max 16 bit depth so uint16 is used
-	for r := 0; r < len(rawScanlines); r++ {
-		scanline := rawScanlines[r]
-		pixelDatas[r] = make([]T, len(scanline))
+func getPixels(rawScanlines [][]byte, png PNG) []uint32 {
+	var pixels []uint32 = make([]uint32, png.Width) // pixels have max 16 bit depth so uint16 is used
+	for _, scanline := range rawScanlines {
+		var scanlinePixels []uint32 = nil
+		if png.bitDepth < 8 {
+			scanlinePixels = fetchPixelsFromSubBytes(scanline, png)
+		} else {
+			scanlinePixels = fetchPixelsFromFullBytes(scanline, png)
+		}
+		pixels = append(pixels, scanlinePixels...)
+	}
+	return pixels
+}
+
+// fetch pixels from images using < 8 bit depth where pixel data is stored on the bit level
+func fetchPixelsFromSubBytes(scanline []byte, png PNG) []uint32 {
+	// the number of split bytes per pixel is 8 / the bit depth
+	// in this function bit depth is expected to be 1, 2, or 4 so splitBpp is always a factor of 8
+	splitBpp := int(8 / png.bitDepth)
+	scanlinePixels := make([]uint32, png.Width)
+
+	c := 0
+	for i := 0; i < len(scanline); i++ {
+		b := scanline[i]
+
+		bytes, err := splitByte(b, int(png.bitDepth))
+		util.CheckErr(err)
+
 		j := 0 // tracks the byte we are evaluating
-		c := 0 // the column of the image we are on
-		for j < len(scanline) {
-			if bitDepth < 8 {
-				b := scanline[j]
-				bytes, err := splitByte(b, int(bitDepth))
-				util.CheckErr(err)
+		for j < len(bytes) {
+			pixel, err := getPixelData(png, bytes[j:j+splitBpp])
+			util.CheckErr(err)
 
-				for _, splitByte := range bytes {
-					pixelDatas[r][c] = T(splitByte)
-				}
-				j++
-			} else {
-				bytes := scanline[j : j+int(bitDepth/8)]
-				pixelDatas[r][c] = convertBytesToUint[T](bytes)
-
-				j += int(bitDepth / 8)
-			}
+			scanlinePixels[c] = pixel
 			c++
+			j += splitBpp
 		}
 	}
 
-	return pixelDatas
+	return scanlinePixels
+}
+
+// fetch a row of pixels from images using 8 or 16 bit depth where pixel data is stored on the byte level
+func fetchPixelsFromFullBytes(scanline []byte, png PNG) []uint32 {
+	bpp, err := bytesPerPixel(png.bitDepth, png.colorType)
+	util.CheckErr(err)
+
+	scanlinePixels := make([]uint32, png.Width)
+
+	j := 0 // tracks the byte we are evaluating
+	c := 0
+	for j < len(scanline) {
+		bytes := scanline[j : j+int(bpp)]
+		var pixel uint32 = 0
+		if png.bitDepth == 16 {
+			// every 2 bytes has meaninful data so we compress every 2 bytes into a single byte (as to not handle 16 bit depth)
+			// but rather scale down to 8 bit depth
+			pixel, err = getPixelData(png, compress16BitDepthBytes(bytes, int(bpp), png.bitDepth))
+		} else {
+			// in this case bitDepth is 8 so each byte has meaningful data
+			pixel, err = getPixelData(png, bytes)
+		}
+		util.CheckErr(err)
+		scanlinePixels[c] = pixel
+		c++
+		j += int(bpp)
+	}
+
+	return scanlinePixels
+}
+
+// compresses a slice of EVEN bytes with bit depth of 16 (every 2 bytes contains meaningful data)
+// into a bit depth of 8 (every byte contains meaninful data) via normalization from a uint16 to uint8
+func compress16BitDepthBytes(bytes []byte, bpp int, bitDepth uint8) []byte {
+	if len(bytes)%2 != 0 {
+		panic("when compressing from 16 bit, the slice of uncompressed bytes must have an even length")
+	}
+
+	var compressedBytes []byte = make([]byte, len(bytes)/2)
+	var prev byte = 0
+	bIdx := 0
+	for i, b := range bytes {
+		if i%bpp == 0 && i != 0 {
+			p := convertBytesToUint[uint16]([]byte{prev, b})
+			compressedBytes[bIdx] = rescaleToByte(bitDepth, p)
+			bIdx++
+		}
+		prev = b
+	}
+
+	return compressedBytes
+}
+
+// Converts a slice of bytes to RGBA data
+// returns a single uint32 representing that pixel's RGBA data
+func getPixelData(png PNG, bytes []byte) (uint32, error) {
+	switch png.colorType {
+	case 0:
+		return grayscaleToRgba(bytes[0], png.bitDepth, 255), nil
+	case 2:
+		// every 3 pixelData's represents RGB of a single pixel
+		return packBytesToUint32(
+			[4]byte{
+				bytes[0],
+				bytes[1],
+				bytes[2],
+				255,
+			},
+		), nil
+	case 3:
+		if png.PLTE == nil {
+			return 0, fmt.Errorf("Should have PLTE chunk with color type 3")
+		}
+		pixelData := bytes[0]
+		return paletteIndicesToRgba(pixelData, png.palette), nil
+	case 4:
+		// every 2 pixelData's represents gray scale and alpha of a single pixel
+		pixel8 := bytes[0]
+		return packBytesToUint32(
+			[4]byte{
+				pixel8,
+				pixel8,
+				pixel8,
+				rescaleToByte(png.bitDepth, bytes[1]),
+			},
+		), nil
+
+	case 6:
+		// every 4 pixelData's represents 3 RGB channels and an alpha channel
+		return packBytesToUint32(
+			[4]byte{
+				bytes[0],
+				bytes[1],
+				bytes[2],
+				bytes[3],
+			},
+		), nil
+	default:
+		return 0, fmt.Errorf("Error color type %d is invalid", png.colorType)
+	}
 }
 
 // Splits a given byte into n different sub-bytes aligned to the LSB.
