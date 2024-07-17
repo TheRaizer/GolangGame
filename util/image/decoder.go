@@ -487,14 +487,19 @@ func inverseUp(filteredScanline []byte, rawPrevScanline []byte) []byte {
 func inverseAverage(filteredScanline []byte, rawPrevScanline []byte, bpp int) []byte {
 	rawScanline := make([]byte, len(filteredScanline))
 	for i := 0; i < len(filteredScanline); i++ {
-		if i < bpp {
-			// will run at least once when i = 0
-			rawScanline[i] = filteredScanline[i]
-		} else {
-			// other case will have run when i = 0, we can be sure rawPrevScanline != nil by this point
-			floored := byte(math.Floor(float64(rawScanline[i-bpp] + rawPrevScanline[i])))
-			rawScanline[i] = filteredScanline[i] + floored
+		var left, up byte
+		if i >= bpp {
+			left = rawScanline[i-bpp]
 		}
+		if rawPrevScanline != nil {
+			up = rawPrevScanline[i]
+		}
+
+		// convert to float to avoid overflow and satisfy type constraint
+		floored := int(math.Floor((float64(left) + float64(up)) / 2))
+
+		// mod 256 to fit into a single byte
+		rawScanline[i] = byte((int(filteredScanline[i]) + floored) % 256)
 	}
 	return rawScanline
 }

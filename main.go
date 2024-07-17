@@ -12,7 +12,6 @@ import (
 	// "github.com/TheRaizer/GolangGame/util"
 	// "github.com/TheRaizer/GolangGame/util/datastructures/quadtree"
 
-	"fmt"
 	"log"
 	"unsafe"
 
@@ -22,7 +21,7 @@ import (
 
 // TODO: refactor this into separate files
 func main() {
-	png := image.DecodePNG("assets/hills.png")
+	png := image.DecodePNG("assets/chars.png")
 
 	// globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	// collisionSys := collision.NewCollisionSystem(globalRect)
@@ -120,7 +119,6 @@ func main() {
 	}
 	defer texture.Destroy()
 
-	fmt.Println(len(*png.Data))
 	texture.Update(nil, unsafe.Pointer(&(*png.Data)[0]), int(png.Width)*4) // width * 4 channels
 
 L:

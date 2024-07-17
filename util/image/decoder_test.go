@@ -78,7 +78,15 @@ func TestInversePaeth(t *testing.T) {
 			},
 			Expected: []byte{222, 111, 44, 85, 100, 4, 66, 208},
 		},
-		// TODO: add test cases with different bpp
+		{
+			Name: getName,
+			Input: TestInput{
+				rawPrevScanline:  []byte{1, 2, 23, 4, 5, 1},
+				filteredScanline: []byte{1, 100, 22, 0, 7, 2},
+				bpp:              3,
+			},
+			Expected: []byte{2, 102, 45, 4, 109, 25},
+		},
 	}
 
 	util.IterateTestCases(cases, t,

@@ -15,7 +15,7 @@ func makeCRCTable() {
 		c := uint32(n)
 		for k := 0; k < 8; k++ {
 			if c&1 == 1 {
-				c = 0xedb88320 ^ (c >> 1)
+				c = 0xedb88320 ^ (c >> 1) // 0xedb88320 represents the polynomial
 			} else {
 				c = c >> 1
 			}
