@@ -127,76 +127,8 @@ func DecodePNG(name string) PNG {
 	return png
 }
 
-// Converts a pixel matrix into a slice of uint32 where each entry represents an RGBA pixel
-// uint32 contains 8 bytes per R, G, B, and A
-// No current support for 16 bit depth
-// NOTE: this would require storing a uint64 of 4 uint16's representing R, G, B, and A
-// If 16 bit is given, it is downscaled to 8 bit RGB
-func convertPixelDataMatrix[T uint8 | uint16](pixelDataMatrix [][]T, png PNG) ([]uint32, error) {
-	pixels := make([]uint32, png.Width*png.Height)
-
-	i := 0
-	for r := 0; r < len(pixelDataMatrix); r++ {
-		row := pixelDataMatrix[r]
-		c := 0
-		for c < len(row) {
-			switch png.colorType {
-			case 0:
-				pixelData := row[c]
-				pixels[i] = grayscaleToRgba(pixelData, png.bitDepth, 255)
-				c++
-			case 2:
-				// every 3 pixelData's represents RGB of a single pixel
-				pixels[i] = packBytesToUint32(
-					[4]byte{
-						rescaleToByte(png.bitDepth, row[c]),
-						rescaleToByte(png.bitDepth, row[c+1]),
-						rescaleToByte(png.bitDepth, row[c+2]),
-						255,
-					},
-				)
-				c += 3 // 3 channels
-			case 3:
-				if png.PLTE == nil {
-					return nil, fmt.Errorf("Should have PLTE chunk with color type 3")
-				}
-				pixelData := row[c]
-				pixels[i] = paletteIndicesToRgba(pixelData, png.palette)
-				c++
-			case 4:
-				// every 2 pixelData's represents gray scale and alpha of a single pixel
-				pixel8 := rescaleToByte(png.bitDepth, row[c])
-				pixels[i] = packBytesToUint32(
-					[4]byte{
-						pixel8,
-						pixel8,
-						pixel8,
-						rescaleToByte(png.bitDepth, row[c+1]),
-					},
-				)
-				c += 2 // 2 channels
-
-			case 6:
-				// every 4 pixelData's represents 3 RGB channels and an alpha channel
-				pixels[i] = packBytesToUint32(
-					[4]byte{
-						rescaleToByte(png.bitDepth, row[c]),
-						rescaleToByte(png.bitDepth, row[c+1]),
-						rescaleToByte(png.bitDepth, row[c+2]),
-						rescaleToByte(png.bitDepth, row[c+3]),
-					},
-				)
-				c += 4 // 4 channels
-			}
-			i++
-		}
-	}
-
-	return pixels, nil
-}
-
 func packBytesToUint32(bytes [4]byte) uint32 {
-	// combine the bytes into a single uint32 (opaque)
+	// combine the bytes into a single uint32
 	return (uint32(bytes[0]) << 24) + (uint32(bytes[1]) << 16) + (uint32(bytes[2]) << 8) + uint32(bytes[3])
 }
 
@@ -292,6 +224,7 @@ func processIDAT(ihdr IHDR, data []byte) ([][]byte, error) {
 	}
 
 	bpp, err := bytesPerPixel(ihdr.bitDepth, ihdr.colorType)
+
 	if err != nil {
 		return nil, err
 	}
@@ -308,9 +241,8 @@ func getPrevScanline(scanlines [][]byte, i int) []byte {
 	var prevScanline []byte = nil
 	if i > 0 {
 		prevScanline = scanlines[i-1]
-		return prevScanline
 	}
-	return nil
+	return prevScanline
 }
 
 // Returns a matrix of the pixel values parsed from the given raw scanlines.
@@ -483,16 +415,15 @@ func splitByte(b byte, n int) ([]byte, error) {
 // scanlines with the filter type ommited.
 func defilterPixelData(decompressedData []byte, width uint32, height uint32, bpp float32) ([][]byte, error) {
 	// one stride corresponds to the length of one scanline excluding filter byte (one row of the image)
-	stride := int(float32(width) * bpp)
+	stride := int(math.Ceil(float64(width) * float64(bpp)))
 
+	bppRounded := int(math.Ceil(float64(bpp)))
 	rawScanlines := make([][]byte, height)
-
 	offset := 0 // points to the filter byte of the scanline
 	i := 0
-	bppRounded := int(math.Ceil(float64(bpp)))
 
 	for i < len(rawScanlines) {
-		filterType := uint8(decompressedData[0])
+		filterType := uint8(decompressedData[offset])
 		filteredScanline := decompressedData[offset+1 : offset+1+stride]
 
 		switch filterType {
@@ -506,9 +437,11 @@ func defilterPixelData(decompressedData []byte, width uint32, height uint32, bpp
 			rawScanlines[i] = inverseAverage(filteredScanline, getPrevScanline(rawScanlines, i), bppRounded)
 		case 4: // Paeth
 			rawScanlines[i] = inversePaeth(filteredScanline, getPrevScanline(rawScanlines, i), bppRounded)
+		default:
+			return nil, fmt.Errorf("Unexpected filter type %d", filterType)
 		}
 		offset += 1 + stride
-		i += 1
+		i++
 	}
 
 	if offset != len(decompressedData) {
@@ -529,7 +462,7 @@ func inverseSub(filteredScanline []byte, bpp int) []byte {
 		if i < bpp {
 			rawScanline[i] = filteredScanline[i]
 		} else {
-			rawScanline[i] = (filteredScanline[i] + rawScanline[i-bpp]) & 0xFF // & 0xFF == % 256 for unsigned integers
+			rawScanline[i] = filteredScanline[i] + rawScanline[i-bpp]
 		}
 	}
 	return rawScanline
@@ -543,7 +476,7 @@ func inverseUp(filteredScanline []byte, rawPrevScanline []byte) []byte {
 		if rawPrevScanline == nil {
 			rawScanline[i] = x
 		} else {
-			rawScanline[i] = (filteredScanline[i] + rawPrevScanline[i]) & 0xFF
+			rawScanline[i] = filteredScanline[i] + rawPrevScanline[i]
 		}
 	}
 	return rawScanline
@@ -560,7 +493,7 @@ func inverseAverage(filteredScanline []byte, rawPrevScanline []byte, bpp int) []
 		} else {
 			// other case will have run when i = 0, we can be sure rawPrevScanline != nil by this point
 			floored := byte(math.Floor(float64(rawScanline[i-bpp] + rawPrevScanline[i])))
-			rawScanline[i] = (filteredScanline[i] + floored) & 0xFF
+			rawScanline[i] = filteredScanline[i] + floored
 		}
 	}
 	return rawScanline
@@ -571,33 +504,43 @@ func inverseAverage(filteredScanline []byte, rawPrevScanline []byte, bpp int) []
 func inversePaeth(filteredScanline []byte, rawPrevScanline []byte, bpp int) []byte {
 	rawScanline := make([]byte, len(filteredScanline))
 	for i := 0; i < len(filteredScanline); i++ {
-		if i < bpp {
-			rawScanline[i] = filteredScanline[i]
-		} else {
-			paethPrediction := paethPredictor(rawScanline[i-bpp], rawPrevScanline[i], rawPrevScanline[i-1])
-			rawScanline[i] = (filteredScanline[i] + paethPrediction) & 0xFF
+		var a, b, c byte
+		if rawPrevScanline != nil {
+			b = rawPrevScanline[i]
+			if i >= bpp {
+				c = rawPrevScanline[i-bpp]
+			}
 		}
+		if i >= bpp {
+			a = rawScanline[i-bpp]
+		}
+		rawScanline[i] = filteredScanline[i] + paethPred(a, b, c)
 	}
 	return rawScanline
 }
 
-// Predict the value of a pixel based on the values of neighbouring pixels.
-// left is the pixel to the left of the current
-// up is the pixel above the current
-// upLeft is the pixel to the upper left of the current
-func paethPredictor(left, up, upLeft byte) byte {
-	p := left + up - upLeft
-	pLeftDist := math.Abs(float64(p - left))
-	pUpDist := math.Abs(float64(p - up))
-	pUpLeftDist := math.Abs(float64(p - upLeft))
+func paethPred(a, b, c byte) byte {
+	// cast to int to avoid overflow
+	p := int(a) + int(b) - int(c)
+	pa := abs(p - int(a))
+	pb := abs(p - int(b))
+	pc := abs(p - int(c))
 
-	if pLeftDist <= pUpDist && pLeftDist <= pUpLeftDist {
-		return left
-	} else if pLeftDist <= pUpLeftDist {
-		return up
+	if pa <= pb && pa <= pc {
+		return a
+	} else if pb <= pc {
+		return b
 	} else {
-		return upLeft
+		return c
 	}
+}
+
+// abs returns the absolute value of an integer.
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // Returns the number of bytes per pixel of a PNG (NOT including the filter byte).

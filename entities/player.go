@@ -3,7 +3,6 @@ package entities
 import (
 	"github.com/TheRaizer/GolangGame/core"
 	"github.com/TheRaizer/GolangGame/core/objs"
-	"github.com/TheRaizer/GolangGame/entities/systems"
 	"github.com/TheRaizer/GolangGame/util"
 	"github.com/veandco/go-sdl2/sdl"
 )

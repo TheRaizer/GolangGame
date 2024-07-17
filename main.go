@@ -22,7 +22,7 @@ import (
 
 // TODO: refactor this into separate files
 func main() {
-	png := image.DecodePNG("assets/chars.png")
+	png := image.DecodePNG("assets/hills.png")
 
 	// globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	// collisionSys := collision.NewCollisionSystem(globalRect)
@@ -100,7 +100,7 @@ func main() {
 	// game.AddGameObject(&wall)
 	// game.Init()
 	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED,
-		sdl.WINDOWPOS_UNDEFINED, 800, 600, sdl.WINDOW_SHOWN)
+		sdl.WINDOWPOS_UNDEFINED, 1000, 600, sdl.WINDOW_SHOWN)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -136,7 +136,9 @@ L:
 		window.UpdateSurface()
 
 		renderer.Clear()
-		renderer.Copy(texture, nil, &sdl.Rect{X: 0, Y: 0, W: int32(png.Width), H: int32(png.Height)})
+		// renderer.Copy(texture, nil, &sdl.Rect{X: 0, Y: 0, W: int32(png.Width / 4), H: int32(png.Height / 4)})
+		renderer.Copy(texture, nil, nil)
+
 		renderer.Present()
 	}
 
