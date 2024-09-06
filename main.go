@@ -21,7 +21,7 @@ import (
 
 // TODO: refactor this into separate files
 func main() {
-	png := image.DecodePNG("assets/chars.png")
+	png := image.DecodePNG("assets/sprites/fighter/back.png")
 
 	// globalRect := quadtree.Rect{X: 0, Y: 0, W: display.WIDTH, H: display.HEIGHT}
 	// collisionSys := collision.NewCollisionSystem(globalRect)
@@ -113,6 +113,7 @@ func main() {
 
 	texture, err := renderer.CreateTexture(sdl.PIXELFORMAT_RGBA8888,
 		sdl.TEXTUREACCESS_STATIC, int32(png.Width), int32(png.Height))
+	texture.SetBlendMode(sdl.BLENDMODE_BLEND) // so alpha channel is not ignored
 
 	if err != nil {
 		log.Fatal(err)
@@ -134,8 +135,7 @@ L:
 		window.UpdateSurface()
 
 		renderer.Clear()
-		// renderer.Copy(texture, nil, &sdl.Rect{X: 0, Y: 0, W: int32(png.Width / 4), H: int32(png.Height / 4)})
-		renderer.Copy(texture, nil, nil)
+		renderer.Copy(texture, nil, &sdl.Rect{X: 0, Y: 0, W: int32(png.Width), H: int32(png.Height)})
 
 		renderer.Present()
 	}

@@ -53,7 +53,7 @@ func DecodePNG(name string) PNG {
 			break
 		}
 
-		chunkLength := convertBytesToUint[uint32](header[:4])
+		chunkLength := util.ConvertBytesToUint[uint32](header[:4])
 		typeBuf := header[4:8]
 		chunkType := string(typeBuf)
 		i += 8
@@ -74,7 +74,8 @@ func DecodePNG(name string) PNG {
 			ihdrChunk, err := decodeIHDR(dataBuf)
 			util.CheckErr(err)
 			png.IHDR = ihdrChunk
-			fmt.Printf("%+v \n", *ihdrChunk)
+
+			fmt.Println(png.colorType)
 		case "PLTE":
 			if png.IHDR.colorType == 0 || png.IHDR.colorType == 4 {
 				panic("PLTE chunk must not occur when color type 0 or 4")
@@ -82,7 +83,6 @@ func DecodePNG(name string) PNG {
 			plteChunk, err := parsePLTE(dataBuf)
 			util.CheckErr(err)
 			png.PLTE = plteChunk
-			fmt.Printf("%+v \n", *plteChunk)
 		case "IDAT":
 			// ihdr chunk must have been read
 			if png.IHDR == nil {
@@ -95,6 +95,17 @@ func DecodePNG(name string) PNG {
 
 			cmpltIdat = append(cmpltIdat, dataBuf...)
 		case "IEND":
+		case "TRNS":
+			if png.IHDR.colorType == 4 || png.IHDR.colorType == 6 {
+				panic("TRNS chunk cannot exist when color type is 4 or 6")
+			}
+
+			if png.PLTE == nil {
+				panic("PLTE chunk must follow the TRNS chunk")
+			}
+
+			png.TRNS, err = parseTRNS(dataBuf, *png.PLTE, png.colorType)
+			util.CheckErr(err)
 		default:
 			// check if the 5th bit (from LSB to MSB i.e. right to left) of the first byte is 1
 			// 0 = critical, 1 = ancillary
@@ -112,17 +123,12 @@ func DecodePNG(name string) PNG {
 		i += 4
 	}
 
-	fmt.Println("Finished compiling chunks")
-
 	rawScanlines, err := processIDAT(*png.IHDR, cmpltIdat)
 	util.CheckErr(err)
-
-	fmt.Println("Finished processing IDAT chunks")
 
 	pixels := getPixels(rawScanlines, png)
 	util.CheckErr(err)
 	png.Data = &pixels
-	fmt.Println("finished decoding")
 
 	return png
 }
@@ -147,9 +153,9 @@ func rescaleToByte[T uint8 | uint16 | uint32 | uint64](bitDepth uint8, pixel T) 
 	return pixel8
 }
 
-func paletteIndicesToRgba[T uint8 | uint16](idx T, palette [][3]byte) uint32 {
+func paletteIndicesToRgba[T uint8 | uint16](idx T, palette [][3]byte, alpha uint8) uint32 {
 	rgb := palette[idx]
-	rgbValue := packBytesToUint32([4]byte{rgb[0], rgb[1], rgb[2], 255})
+	rgbValue := packBytesToUint32([4]byte{rgb[0], rgb[1], rgb[2], alpha})
 	return rgbValue
 }
 
@@ -157,7 +163,7 @@ func checkCRC(typeBuf []byte, dataBuf []byte, crcBuf []byte) {
 	var crcInput []byte = append(typeBuf, dataBuf...)
 	crc := Crc32(crcInput)
 
-	if crc != convertBytesToUint[uint32](crcBuf) {
+	if crc != util.ConvertBytesToUint[uint32](crcBuf) {
 		panic("CRC's did not match in a chunk")
 	}
 
@@ -173,6 +179,7 @@ func isEOF(err error) bool {
 	return false
 }
 
+// TODO: move to IHDR.go call parseIHDR
 // decode the IHDR data into its separate data per
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html
 func decodeIHDR(data []byte) (*IHDR, error) {
@@ -180,14 +187,15 @@ func decodeIHDR(data []byte) (*IHDR, error) {
 		return nil, fmt.Errorf("IHDR data length must be 13")
 	}
 
-	width := convertBytesToUint[uint32](data[0:4])
-	height := convertBytesToUint[uint32](data[4:8])
+	width := util.ConvertBytesToUint[uint32](data[0:4])
+	height := util.ConvertBytesToUint[uint32](data[4:8])
 
 	ihdr := NewIHDR(width, height, data[8], data[9], data[10], data[11], data[12])
 
 	return &ihdr, nil
 }
 
+// TODO: move to PLTE.go
 func parsePLTE(data []byte) (*PLTE, error) {
 	if len(data)%3 != 0 {
 		return nil, fmt.Errorf("PLTE data length must be divisible by 3")
@@ -328,7 +336,7 @@ func compress16BitDepthBytes(bytes []byte, bpp int, bitDepth uint8) []byte {
 	bIdx := 0
 	for i, b := range bytes {
 		if i%bpp == 0 && i != 0 {
-			p := convertBytesToUint[uint16]([]byte{prev, b})
+			p := util.ConvertBytesToUint[uint16]([]byte{prev, b})
 			compressedBytes[bIdx] = rescaleToByte(bitDepth, p)
 			bIdx++
 		}
@@ -343,23 +351,42 @@ func compress16BitDepthBytes(bytes []byte, bpp int, bitDepth uint8) []byte {
 func getPixelData(png PNG, bytes []byte) (uint32, error) {
 	switch png.colorType {
 	case 0:
-		return grayscaleToRgba(bytes[0], png.bitDepth, 255), nil
+		var alpha uint8 = 255
+		if png.TRNS != nil {
+			if uint16(bytes[0]) == png.gray {
+				alpha = 0
+			}
+		}
+		return grayscaleToRgba(bytes[0], png.bitDepth, alpha), nil
 	case 2:
+		color := [4]byte{
+			bytes[0],
+			bytes[1],
+			bytes[2],
+			255,
+		}
+
+		if png.TRNS != nil {
+			if uint16(bytes[0]) == png.rgb[0] && uint16(bytes[1]) == png.rgb[1] && uint16(bytes[2]) == png.rgb[2] {
+				color[3] = 0 // make transparent
+			}
+		}
 		// every 3 pixelData's represents RGB of a single pixel
 		return packBytesToUint32(
-			[4]byte{
-				bytes[0],
-				bytes[1],
-				bytes[2],
-				255,
-			},
+			color,
 		), nil
 	case 3:
 		if png.PLTE == nil {
 			return 0, fmt.Errorf("Should have PLTE chunk with color type 3")
 		}
-		pixelData := bytes[0]
-		return paletteIndicesToRgba(uint8(pixelData), png.palette), nil
+
+		paletteIdx := uint8(bytes[0])
+		var alpha uint8 = 255
+		if png.TRNS != nil && int(paletteIdx) < len(png.alphas) {
+			alpha = png.alphas[paletteIdx]
+		}
+
+		return paletteIndicesToRgba(paletteIdx, png.palette, alpha), nil
 	case 4:
 		// every 2 pixelData's represents gray scale and alpha of a single pixel
 		pixel8 := bytes[0]
@@ -577,16 +604,4 @@ func checkHeader(header []byte) error {
 		return fmt.Errorf("Not a PNG file")
 	}
 	return nil
-}
-
-// this assumes data is formated in big endian
-// length of val * 8 (bits) determines the type to use
-func convertBytesToUint[T uint8 | uint16 | uint32 | uint64](val []byte) T {
-	num := 0.0
-
-	for i, byte := range val {
-		num += float64(byte) * math.Pow(256, float64(len(val)-1-i))
-	}
-
-	return T(num)
 }
